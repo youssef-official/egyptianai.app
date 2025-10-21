@@ -1,40 +1,57 @@
+// src/pages/terms.tsx
+import Head from "next/head";
+
 export default function TermsPage() {
   return (
-    <main className="max-w-4xl mx-auto px-6 py-12 text-right" dir="rtl">
-      <h1 className="text-4xl font-bold mb-6 text-blue-600">
-        شروط الاستخدام - AI Egyptian Doctor
-      </h1>
+    <>
+      <Head>
+        <title>الشروط والأحكام - AI Egyptian Doctor</title>
+      </Head>
 
-      <p className="text-gray-700 leading-relaxed mb-4">
-        مرحبًا بك في منصة <strong>AI Egyptian Doctor</strong>. باستخدامك لهذه المنصة،
-        فإنك توافق على الالتزام بجميع الشروط والأحكام الموضحة أدناه. نرجو قراءة هذه
-        البنود بعناية قبل البدء باستخدام الموقع أو التطبيق.
-      </p>
-
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">1. التسجيل والحساب</h2>
-        <p className="text-gray-700">
-          • يتم التسجيل باستخدام حساب Google عبر Supabase Auth.<br />
-          • يجب إدخال معلومات صحيحة ودقيقة أثناء التسجيل.<br />
-          • لا يجوز للمستخدم إنشاء أكثر من حساب واحد.<br />
-          • لا يمكن تغيير نوع الحساب بعد التسجيل (مستخدم / دكتور).
+      <main className="max-w-3xl mx-auto p-6 text-gray-800">
+        <h1 className="text-3xl font-bold mb-6">الشروط والأحكام</h1>
+        <p className="mb-4">
+          باستخدامك لموقع <strong>AI Egyptian Doctor</strong>، فإنك توافق على جميع الشروط الموضحة في هذه الصفحة.
         </p>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">2. النظام المالي</h2>
-        <p className="text-gray-700">
-          • كل مستخدم يمتلك محفظة رقمية داخل المنصة.<br />
-          • يمكن للمستخدمين شحن محافظهم بطرق الدفع المتاحة (فودافون كاش، إنستا باي...).<br />
-          • الأطباء يمكنهم سحب أرباحهم بعد خصم عمولة بنسبة 10٪.<br />
-          • المنصة لا تتحمل أي مسؤولية عن تأخير عمليات التحويل البنكي.
+        <h2 className="text-2xl font-semibold mt-8 mb-3">1. استخدام الموقع</h2>
+        <p className="mb-4">
+          الموقع مخصص لتقديم استشارات طبية عن بُعد مع أطباء مصريين معتمدين. أي استخدام آخر يُعد مخالفًا للشروط.
         </p>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">3. التحدث مع الأطباء</h2>
-        <p className="text-gray-700">
-          • يمكن للمستخدم بدء محادثة مع طبيب حقيقي بعد الدفع المسبق.<br />
+        <h2 className="text-2xl font-semibold mt-8 mb-3">2. الحسابات</h2>
+        <p className="mb-4">
+          يجب عليك تسجيل حساب باستخدام Google عبر Supabase. أي معلومات مزيفة تؤدي إلى إغلاق الحساب فورًا.
+        </p>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-3">3. الخصوصية</h2>
+        <p className="mb-4">
+          نحن نحترم خصوصيتك ولا نشارك بياناتك مع أي جهة خارجية دون موافقتك.
+        </p>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-3">4. المدفوعات</h2>
+        <p className="mb-4">
+          يمكن الدفع من خلال المحافظ الإلكترونية (فودافون كاش، أورنج كاش)، أو العملات الرقمية (USDT, Bitcoin).
+          بعد الدفع، يجب رفع إثبات العملية لتأكيد الحجز.
+        </p>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-3">5. المسؤولية</h2>
+        <p className="mb-4">
+          الموقع غير مسؤول عن أي تشخيص خاطئ يتم بناءً على معلومات غير صحيحة يقدمها المستخدم.
+        </p>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-3">6. التعديلات</h2>
+        <p className="mb-4">
+          يحق لإدارة الموقع تعديل هذه الشروط في أي وقت دون إشعار مسبق.
+        </p>
+
+        <footer className="mt-10 text-sm text-gray-500">
+          آخر تحديث: {new Date().toLocaleDateString("ar-EG")}
+        </footer>
+      </main>
+    </>
+  );
+}          • يمكن للمستخدم بدء محادثة مع طبيب حقيقي بعد الدفع المسبق.<br />
           • كل عملية محادثة تولد رقم تعريف فريد (ID) يتم استخدامه للتحقق لاحقًا.<br />
           • المنصة ليست بديلاً عن الاستشارة الطبية الفعلية، وإنما وسيلة تواصل رقمية فقط.<br />
           • يتحمل المستخدم المسؤولية الكاملة عن قراراته الناتجة عن المحادثة.
