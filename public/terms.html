@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>شروط الاستخدام - AI Egyptian Doctor</title>
+
+  <!-- Tailwind Play CDN (للاستخدام السريع - للإنتاج استخدم بناء Tailwind محلي) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* لمسات بسيطة للتباعد وطباعة عربية */
+    body {
+      font-family: "Noto Naskh Arabic", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: #f8fafc;
+      color: #0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .container { max-width: 900px; }
+    .accent { color: #0ea5a6; } /* لون مميز */
+    code { background:#eef2f7; padding:2px 6px; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; }
+  </style>
+</head>
+<body class="min-h-screen flex items-start justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <main class="container bg-white shadow-md rounded-xl p-8">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold">شروط الاستخدام</h1>
+        <p class="text-sm text-slate-500 mt-1">AI Egyptian Doctor — منصة الاستشارات الطبية عبر الأطباء المسجلين</p>
+      </div>
+      <div class="text-right">
+        <span class="text-xs text-slate-400">آخر تحديث:</span>
+        <div class="text-sm font-medium">21 أكتوبر 2025</div>
+      </div>
+    </header>
+
+    <section class="space-y-6 text-slate-700 leading-relaxed">
+      <article>
+        <h2 class="text-lg font-semibold mb-2">مقدمة</h2>
+        <p>
+          مرحبًا بك في منصة <span class="font-semibold">AI Egyptian Doctor</span>. باستخدامك لهذه المنصة
+          (الموقع/التطبيق) فإنك توافق على الالتزام بهذه الشروط. يرجى قراءتها بعناية قبل استخدام الخدمة.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">تعريفات</h2>
+        <ul class="list-disc mr-6 space-y-1">
+          <li><strong>المنصة / الموقع:</strong> AI Egyptian Doctor.</li>
+          <li><strong>المستخدم:</strong> أي شخص يسجل أو يستخدم المنصة (مريض/زائر).</li>
+          <li><strong>الطبيب:</strong> أي مزود خدمة طبية مسجل في المنصة.</li>
+          <li><strong>المشرف / الإدارة:</strong> الجهة المشغّلة للمنصة.</li>
+        </ul>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">نطاق الخدمة</h2>
+        <p>
+          توفر المنصة وسيلة لربط المستخدمين بالدكاترة المسجلين لدى المنصة بهدف الاستشارة الطبية عبر المحادثة أو التواصل الخارجي
+          (مثل واتساب) بحسب ما يحدده كل طبيب في ملفه الشخصي. المنصة لا تغطي الخدمات الطبية الطارئة أو الإسعافات الفورية.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">التسجيل والحساب</h2>
+        <p>
+          التسجيل يتم عبر <strong>Supabase Auth</strong> أو تسجيل الدخول بواسطة حساب Google. يلتزم المستخدم بإدخال بيانات صحيحة وحديثة.
+          نوع الحساب (مستخدم أو دكتور) يُحدَّد عند التسجيل ولا يمكن تغييره إلا بواسطة الإدارة.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">المحفظة والدفعات</h2>
+        <p>
+          المنصة تتيح نظام محفظة داخلية لتخزين الرصيد كنقاط (1 جنيه = 1 نقطة). يمكن للمستخدمين شحن رصيدهم بطرق الدفع المعتمدة ورفع إثبات التحويل.
+          تظل حالة الإيداع مُعلَّقة حتى الموافقة من المشرف. في حال الموافقة تُضاف النقاط إلى رصيد المستخدم.
+        </p>
+        <p class="mt-2">
+          عند بدء جلسة مع دكتور حقيقي يتم خصم الرسوم المحددة من رصيد المستخدم، وتُحسب عمولة المنصة (مثلًا 10%) وتُضاف الحصة المتبقية لرصيد الطبيب.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">سحب أرصدة الأطباء</h2>
+        <p>
+          يستطيع الطبيب طلب سحب رصيده وفق طرق السحب المتاحة. قد تُخصم رسوم أو عمولة (مثال: 10%) على كل سحب. طلبات السحب تُراجع من قِبل الإدارة قبل الإتمام.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">رسائل تأكيد الدفع وID العملية</h2>
+        <p>
+          بعد أي عملية دفع يُنشىء النظام <code>ID</code> فريدًا مُخصَّصًا للعملية. يحصل المستخدم على رسالة تأكيد قابلة للنسخ
+          تحتوي على بيانات العملية (المبلغ، اسم الطبيب، التاريخ، رقم العملية). يمكن للطبيب التحقق من العملية عبر إدخال الـ
+          <code>ID</code> في لوحة التحكم الخاصة به.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">سلوك المستخدم والالتزامات</h2>
+        <ul class="list-disc mr-6 space-y-1">
+          <li>تلتزم بعدم استخدام المنصة لنشر معلومات كاذبة أو مضللة.</li>
+          <li>لا تشارك معلومات حساسة (مثل رقم البطاقة أو كلمات المرور) عبر الرسائل العامة.</li>
+          <li>احترام خصوصية الأطباء والمستخدمين الآخرين.</li>
+        </ul>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">حدود المسؤولية</h2>
+        <p>
+          المنصة وسيط تقني يربط المريض بالطبيب. لا تتحمل إدارة المنصة مسؤولية التشخيص الطبي النهائي أو أخطاء الأطباء.
+          في الحالات الطارئة يجب الاتصال بخدمات الطوارئ المحلية فورًا. كما أن المنصة غير مسؤولة عن أي فقدان عرضي للأموال
+          نتيجة تحويلات خارجية غير موثقة.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">الخصوصية وحماية البيانات</h2>
+        <p>
+          نقوم بجمع بيانات محدودة لتشغيل المنصة (الاسم، رقم الهاتف، سجلات المحادثات والعمليات المالية). تُخزن البيانات بشكل آمن
+          وفق سياسات الخصوصية. لا تتم مشاركة البيانات مع طرف ثالث إلا بموافقة صريحة أو بمقتضى القانون.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">الملكية الفكرية</h2>
+        <p>
+          جميع الحقوق المتعلقة بالموقع والمحتوى والتصاميم والبرمجيات تابعة لإدارة المنصة ما لم يُذكر خلاف ذلك. لا يجوز نسخ
+          أو إعادة نشر المحتوى دون إذن خطي.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">إنهاء الخدمة وحظر الحساب</h2>
+        <p>
+          تحتفظ الإدارة بالحق في تعليق أو إنهاء أو تقييد وصول أي مستخدم ينتهك شروط الاستخدام أو يسيء استخدام الخدمات دون إخطارات مسبقة.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">التعديلات على الشروط</h2>
+        <p>
+          قد نقوم بتحديث هذه الشروط من وقت لآخر. النُسخة المنشورة على هذا الرابط هي المعتمدة، وسيتم إعلام المستخدمين بالتعديلات
+          الجوهرية عند الاقتضاء.
+        </p>
+      </article>
+
+      <article>
+        <h2 class="text-lg font-semibold mb-2">التواصل</h2>
+        <p>
+          لأي استفسارات أو شكاوى تواصل معنا عبر البريد الإلكتروني:
+          <a href="mailto:youssef.official.2411@gmail.com" class="accent hover:underline">youssef.official.2411@gmail.com</a>
+        </p>
+      </article>
+
+      <article class="pt-4 border-t mt-4">
+        <p class="text-sm text-slate-500">
+          ملاحظة: هذا المستند هو نموذج شروط استخدام عام. ننصح بمراجعته قانونيًا قبل اعتماده نشرًا أو استخدامًا رسميًا.
+        </p>
+      </article>
+    </section>
+
+    <footer class="mt-8 text-center text-slate-500 text-sm">
+      © <span id="year"></span> AI Egyptian Doctor — جميع الحقوق محفوظة.
+    </footer>
+  </main>
+
+  <script>
+    // تحديث سنة في الفوتر
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+  </html>
