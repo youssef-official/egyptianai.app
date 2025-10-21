@@ -149,14 +149,14 @@ const Index = () => {
 
           <Card 
             className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
-            onClick={() => navigate("/transfer")}
+            onClick={() => navigate("/profile")}
           >
             <CardHeader className="p-5">
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <ArrowRightLeft className="w-7 h-7 text-primary" />
+                  <User className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle className="text-sm">تحويل رصيد</CardTitle>
+                <CardTitle className="text-sm">حسابي</CardTitle>
               </div>
             </CardHeader>
           </Card>
