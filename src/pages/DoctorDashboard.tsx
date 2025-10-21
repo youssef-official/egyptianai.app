@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Stethoscope, Wallet, Search, LogOut, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const DoctorDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -167,8 +168,8 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 animate-fade-in">
           <div className="flex items-center gap-4">
@@ -321,6 +322,7 @@ const DoctorDashboard = () => {
           </CardContent>
         </Card>
       </div>
+      <BottomNav />
     </div>
   );
 };

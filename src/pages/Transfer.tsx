@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Send } from "lucide-react";
+import { ArrowRight, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const Transfer = () => {
   const [receiverId, setReceiverId] = useState("");
@@ -89,14 +90,14 @@ const Transfer = () => {
       await supabase
         .from("wallets")
         .update({ balance: newSenderBalance })
-        .eq("id", wallet.id);
+        .eq("user_id", user!.id);
 
       // Add to receiver
-      const newReceiverBalance = parseFloat(receiverWallet.balance) + transferAmount;
+      const newReceiverBalance = parseFloat(String(receiverWallet.balance)) + transferAmount;
       await supabase
         .from("wallets")
         .update({ balance: newReceiverBalance })
-        .eq("id", receiverWallet.id);
+        .eq("user_id", String(receiverId));
 
       // Create transaction
       const transactionId = `TR${Date.now()}`;
@@ -131,7 +132,7 @@ const Transfer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
       <div className="container mx-auto max-w-2xl">
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
@@ -140,10 +141,10 @@ const Transfer = () => {
           </Button>
         </div>
 
-        <Card className="shadow-strong animate-fade-in">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-lg">
+        <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
             <CardTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
+              <ArrowRightLeft className="w-5 h-5" />
               تحويل رصيد
             </CardTitle>
             <CardDescription className="text-white/90">
@@ -204,6 +205,7 @@ const Transfer = () => {
           </CardContent>
         </Card>
       </div>
+      <BottomNav />
     </div>
   );
 };

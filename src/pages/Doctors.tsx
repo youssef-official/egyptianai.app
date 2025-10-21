@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowRight, Copy, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const Doctors = () => {
   const [departments, setDepartments] = useState<any[]>([]);
@@ -70,15 +71,18 @@ const Doctors = () => {
     }
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Generate transaction ID
       const id = generateTransactionId();
       
       // Deduct from wallet
-      const newBalance = parseFloat(wallet.balance) - parseFloat(doctor.price);
+      const newBalance = parseFloat(wallet.balance) - Number(doctor.price);
       await supabase
         .from("wallets")
         .update({ balance: newBalance })
-        .eq("id", wallet.id);
+        .eq("user_id", user!.id);
 
       // Add to doctor's wallet
       const { data: doctorWallet } = await supabase
@@ -88,15 +92,14 @@ const Doctors = () => {
         .single();
 
       if (doctorWallet) {
-        const doctorNewBalance = parseFloat(doctorWallet.balance) + parseFloat(doctor.price);
+        const doctorNewBalance = parseFloat(String(doctorWallet.balance)) + Number(doctor.price);
         await supabase
           .from("wallets")
           .update({ balance: doctorNewBalance })
-          .eq("id", doctorWallet.id);
+          .eq("user_id", String(doctor.user_id));
       }
 
       // Create transaction
-      const { data: { user } } = await supabase.auth.getUser();
       await supabase
         .from("transactions")
         .insert({
@@ -154,8 +157,8 @@ const Doctors = () => {
 
   if (!selectedDept) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
-        <div className="container mx-auto max-w-6xl">
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
+        <div className="container mx-auto max-w-2xl">
           <div className="mb-8">
             <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
               <ArrowRight className="w-4 h-4" />
@@ -181,13 +184,14 @@ const Doctors = () => {
             ))}
           </div>
         </div>
+        <BottomNav />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
-      <div className="container mx-auto max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
+      <div className="container mx-auto max-w-2xl">
         <div className="mb-8">
           <Button variant="ghost" onClick={() => setSelectedDept(null)} className="gap-2">
             <ArrowRight className="w-4 h-4" />
@@ -261,6 +265,7 @@ const Doctors = () => {
           ))}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 };

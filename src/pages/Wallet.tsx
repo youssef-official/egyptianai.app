@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Upload, Wallet as WalletIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
@@ -97,7 +98,7 @@ const Wallet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
       <div className="container mx-auto max-w-2xl">
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
@@ -106,8 +107,8 @@ const Wallet = () => {
           </Button>
         </div>
 
-        <Card className="shadow-strong animate-fade-in">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-lg">
+        <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
             <CardTitle className="flex items-center gap-2">
               <WalletIcon className="w-5 h-5" />
               إيداع رصيد
@@ -189,6 +190,7 @@ const Wallet = () => {
           </CardContent>
         </Card>
       </div>
+      <BottomNav />
     </div>
   );
 };

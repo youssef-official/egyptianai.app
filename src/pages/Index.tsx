@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Stethoscope, Wallet, MessageSquare, LogOut, User } from "lucide-react";
+import { Stethoscope, Wallet, MessageSquare, LogOut, User, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -74,53 +75,56 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-fade-in">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-medium">
-              <Stethoscope className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-6 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong">
+              <Stethoscope className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
-              <p className="text-sm text-muted-foreground">منصة الاستشارات الطبية</p>
+              <h1 className="text-xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
+              <p className="text-xs text-muted-foreground">منصة الاستشارات الطبية</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="gap-2">
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout} 
+            className="gap-2 rounded-full h-10 w-10 p-0"
+          >
             <LogOut className="w-4 h-4" />
-            تسجيل خروج
           </Button>
         </div>
 
         {/* Wallet Card */}
-        <Card className="mb-8 shadow-medium animate-slide-in-right">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
+        <Card className="mb-6 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl pb-8">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="w-5 h-5" />
               محفظتي
             </CardTitle>
-            <CardDescription className="text-white/90">
-              الرصيد الحالي
-            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="text-5xl font-bold text-primary">
-                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-2xl">جنيه</span>
+          <CardContent className="pt-6 pb-6">
+            <div className="text-center space-y-5">
+              <div className="text-4xl font-bold text-primary">
+                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-xl">جنيه</span>
               </div>
-              <div className="flex gap-4 justify-center">
+              <div className="flex gap-3 justify-center">
                 <Button 
-                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow"
+                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full flex-1 h-11"
                   onClick={() => navigate("/wallet")}
                 >
-                  إيداع رصيد
+                  <Wallet className="w-4 h-4 ml-2" />
+                  إيداع
                 </Button>
                 <Button 
                   variant="outline"
+                  className="rounded-full flex-1 h-11"
                   onClick={() => navigate("/transfer")}
                 >
-                  تحويل رصيد
+                  <ArrowRightLeft className="w-4 h-4 ml-2" />
+                  تحويل
                 </Button>
               </div>
             </div>
@@ -128,47 +132,38 @@ const Index = () => {
         </Card>
 
         {/* Main Actions */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:-translate-y-1 animate-fade-in"
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
             onClick={() => navigate("/doctors")}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-primary" />
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <MessageSquare className="w-7 h-7 text-primary" />
                 </div>
-                تحدث مع دكتور حقيقي
-              </CardTitle>
-              <CardDescription>
-                اختر التخصص المناسب وابدأ المحادثة مع طبيب متخصص
-              </CardDescription>
+                <CardTitle className="text-sm">استشارة طبية</CardTitle>
+              </div>
             </CardHeader>
           </Card>
 
           <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:-translate-y-1 animate-fade-in"
-            onClick={() => navigate("/profile")}
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            onClick={() => navigate("/transfer")}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <ArrowRightLeft className="w-7 h-7 text-primary" />
                 </div>
-                حسابي
-              </CardTitle>
-              <CardDescription>
-                عرض وتعديل معلومات الحساب الشخصي
-              </CardDescription>
+                <CardTitle className="text-sm">تحويل رصيد</CardTitle>
+              </div>
             </CardHeader>
           </Card>
         </div>
-
-        {/* Footer */}
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>© 2025 AI Egyptian Doctor. جميع الحقوق محفوظة.</p>
-        </div>
       </div>
+      
+      <BottomNav />
     </div>
   );
 };
