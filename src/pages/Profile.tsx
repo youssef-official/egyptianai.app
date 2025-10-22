@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check, MessageCircle } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
@@ -29,6 +29,17 @@ const Profile = () => {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    
+    return !!data;
+  };
 
   const loadProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -208,6 +219,21 @@ const Profile = () => {
               <Badge className="mt-2" variant={profile?.user_type === 'doctor' ? 'default' : 'secondary'}>
                 {profile?.user_type === 'doctor' ? '👨‍⚕️ دكتور' : '👤 مستخدم'}
               </Badge>
+              
+              {/* Quick Actions */}
+              <div className="flex gap-2 mt-4">
+                {profile?.user_type === 'doctor' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/doctor-dashboard")}
+                    className="gap-2"
+                  >
+                    <Stethoscope className="w-4 h-4" />
+                    لوحة الطبيب
+                  </Button>
+                )}
+              </div>
               
               <div className="flex items-center gap-2 mt-4 bg-secondary px-4 py-2 rounded-full">
                 <span className="text-sm text-muted-foreground">معرف المستخدم:</span>

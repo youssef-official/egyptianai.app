@@ -69,7 +69,7 @@ const BottomNav = () => {
           to="/"
           isActive={location.pathname === "/"}
         />
-        {!isDoctor && !isAdmin && (
+        {!isDoctor && (
           <NavItem
             icon={Stethoscope}
             label="الأطباء"
@@ -81,8 +81,8 @@ const BottomNav = () => {
           <NavItem
             icon={Wallet}
             label="المحفظة"
-            to={isAdmin ? "/admin-dashboard" : "/wallet"}
-            isActive={location.pathname === "/wallet" || (isAdmin && location.pathname === "/admin-dashboard")}
+            to="/wallet"
+            isActive={location.pathname === "/wallet"}
           />
         )}
         <NavItem
@@ -97,14 +97,6 @@ const BottomNav = () => {
             label="لوحتي"
             to="/doctor-dashboard"
             isActive={location.pathname === "/doctor-dashboard"}
-          />
-        )}
-        {isAdmin && (
-          <NavItem
-            icon={Shield}
-            label="الإدارة"
-            to="/admin-dashboard"
-            isActive={location.pathname === "/admin-dashboard"}
           />
         )}
       </div>

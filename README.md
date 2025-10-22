@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
+# AI | Egyptian Doctor 🏥
 
-## Project info
+منصة الاستشارات الطبية الذكية الرائدة في مصر - احصل على استشارة طبية فورية من أطباء موثوقين
+
+## 🌟 المميزات
+
+### للمرضى
+- 🔍 **البحث عن الأطباء**: ابحث عن أطباء موثوقين في جميع التخصصات
+- 💬 **استشارات فورية**: تواصل مع الأطباء عبر الواتساب
+- 💰 **محفظة رقمية**: إيداع وإدارة الأموال بسهولة وأمان
+- ✅ **أطباء موثوقين**: جميع الأطباء المميزين حاصلون على علامة التوثيق
+
+### للأطباء
+- 📊 **لوحة تحكم احترافية**: إدارة الاستشارات والأرباح
+- 💵 **سحب الأرباح**: اطلب سحب أرباحك بسهولة (مع خصم عمولة 10%)
+- 🔍 **البحث في العمليات**: ابحث عن أي عملية برقمها
+- ⭐ **التوثيق**: احصل على علامة التوثيق لتظهر في الصفحة الرئيسية
+
+### للمشرفين
+- 🛡️ **لوحة تحكم شاملة**: إدارة كاملة للمنصة
+- ✅ **الموافقة على الطلبات**: إدارة طلبات الإيداع والسحب
+- 👥 **إدارة المستخدمين**: عرض وإدارة جميع المستخدمين
+- 🏆 **توثيق الأطباء**: منح أو إلغاء التوثيق للأطباء
+- 📈 **الإحصائيات**: عرض إحصائيات المنصة في الوقت الفعلي
+
+## 🛠️ التقنيات المستخدمة
+
+- ⚛️ **React 18** - مكتبة JavaScript الحديثة
+- 🎨 **Tailwind CSS** - تصميم سريع الاستجابة
+- 🔐 **Supabase** - قاعدة البيانات والمصادقة
+- 📱 **PWA Ready** - تطبيق ويب تقدمي
+- 🎯 **TypeScript** - أمان الأكواد
+
+## 🚀 البدء السريع
+
+```bash
+# التثبيت
+npm install
+
+# التشغيل في وضع التطوير
+npm run dev
+
+# البناء للإنتاج
+npm run build
+```
+
+## 📱 الصفحات الرئيسية
+
+- `/` - الصفحة الرئيسية
+- `/auth` - تسجيل الدخول والتسجيل
+- `/doctors` - قائمة الأطباء
+- `/wallet` - المحفظة
+- `/transfer` - تحويل الأموال
+- `/profile` - الملف الشخصي
+- `/doctor-dashboard` - لوحة تحكم الطبيب
+- `/admin-dashboard` - لوحة تحكم المشرف
+
+## 🔒 الأمان
+
+- ✅ Row Level Security (RLS) على جميع الجداول
+- ✅ مصادقة آمنة مع Supabase Auth
+- ✅ حماية المسارات حسب نوع المستخدم
+- ✅ تخزين آمن للصور والملفات
+
+## 📞 الدعم الفني
+
+للتوثيق والدعم، تواصل معنا:
+- 📱 واتساب: +201108279642
+
+## 🌐 رابط المشروع
 
 **URL**: https://lovable.dev/projects/6089bbd1-98ed-4fe1-99c2-2cb756c7b01b
 
-## How can I edit this code?
+## 📄 الترخيص
 
-There are several ways of editing your application.
+جميع الحقوق محفوظة © 2025 AI Egyptian Doctor
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6089bbd1-98ed-4fe1-99c2-2cb756c7b01b) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6089bbd1-98ed-4fe1-99c2-2cb756c7b01b) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+صنع بـ ❤️ في مصر

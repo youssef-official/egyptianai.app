@@ -29,7 +29,7 @@ const App = () => (
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
