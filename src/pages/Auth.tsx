@@ -11,6 +11,7 @@ import { Stethoscope, Mail, Lock, User, Phone, Info } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showExtraFields, setShowExtraFields] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -123,75 +124,105 @@ const Auth = () => {
 
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    الاسم الكامل
-                  </Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    className="text-right"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                البريد الإلكتروني
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="text-right rounded-2xl transition-all"
+                placeholder="example@email.com"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    رقم الهاتف
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="text-right"
-                    placeholder="01XXXXXXXXX"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                كلمة المرور
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="text-right rounded-2xl transition-all"
+                minLength={6}
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="referral" className="flex items-center gap-2">
-                    <Info className="w-4 h-4" />
-                    من أين سمعت عنا؟
-                  </Label>
-                  <Select value={referralSource} onValueChange={setReferralSource}>
-                    <SelectTrigger className="text-right">
-                      <SelectValue placeholder="اختر..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="facebook">فيسبوك</SelectItem>
-                      <SelectItem value="instagram">إنستجرام</SelectItem>
-                      <SelectItem value="twitter">تويتر</SelectItem>
-                      <SelectItem value="friend">صديق</SelectItem>
-                      <SelectItem value="other">آخر</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className={`space-y-4 overflow-hidden transition-all duration-500 ${!isLogin && showExtraFields ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  الاسم الكامل
+                </Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required={!isLogin}
+                  className="text-right rounded-2xl"
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="userType" className="flex items-center gap-2">
-                    <Stethoscope className="w-4 h-4" />
-                    نوع الحساب
-                  </Label>
-                  <Select value={userType} onValueChange={(value: "user" | "doctor") => setUserType(value)}>
-                    <SelectTrigger className="text-right">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">مستخدم عادي 🧍</SelectItem>
-                      <SelectItem value="doctor">دكتور 🧑‍⚕️</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  رقم الهاتف
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required={!isLogin}
+                  className="text-right rounded-2xl"
+                  placeholder="01XXXXXXXXX"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="referral" className="flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  من أين سمعت عنا؟
+                </Label>
+                <Select value={referralSource} onValueChange={setReferralSource}>
+                  <SelectTrigger className="text-right rounded-2xl">
+                    <SelectValue placeholder="اختر..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="facebook">فيسبوك</SelectItem>
+                    <SelectItem value="instagram">إنستجرام</SelectItem>
+                    <SelectItem value="twitter">تويتر</SelectItem>
+                    <SelectItem value="friend">صديق</SelectItem>
+                    <SelectItem value="other">آخر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="userType" className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4" />
+                  نوع الحساب
+                </Label>
+                <Select value={userType} onValueChange={(value: "user" | "doctor") => setUserType(value)}>
+                  <SelectTrigger className="text-right rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">مستخدم عادي 🧍</SelectItem>
+                    <SelectItem value="doctor">دكتور 🧑‍⚕️</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
@@ -273,7 +304,14 @@ const Auth = () => {
               type="button"
               variant="link"
               className="w-full"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                if (isLogin) {
+                  setTimeout(() => setShowExtraFields(true), 100);
+                } else {
+                  setShowExtraFields(false);
+                }
+              }}
             >
               {isLogin ? "ليس لديك حساب؟ أنشئ حساباً" : "لديك حساب؟ سجل دخولك"}
             </Button>

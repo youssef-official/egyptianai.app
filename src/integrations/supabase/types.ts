@@ -60,48 +60,66 @@ export type Database = {
       }
       doctors: {
         Row: {
+          address: string | null
           bio_ar: string | null
           bio_en: string | null
+          consultation_fee: number | null
           created_at: string
           department_id: string
+          doctor_name: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_verified: boolean | null
+          phone_number: string | null
           price: number
           specialization_ar: string
           specialization_en: string
           updated_at: string
           user_id: string
+          verification_requested_at: string | null
           whatsapp_number: string
         }
         Insert: {
+          address?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          consultation_fee?: number | null
           created_at?: string
           department_id: string
+          doctor_name?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_verified?: boolean | null
+          phone_number?: string | null
           price: number
           specialization_ar: string
           specialization_en: string
           updated_at?: string
           user_id: string
+          verification_requested_at?: string | null
           whatsapp_number: string
         }
         Update: {
+          address?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          consultation_fee?: number | null
           created_at?: string
           department_id?: string
+          doctor_name?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_verified?: boolean | null
+          phone_number?: string | null
           price?: number
           specialization_ar?: string
           specialization_en?: string
           updated_at?: string
           user_id?: string
+          verification_requested_at?: string | null
           whatsapp_number?: string
         }
         Relationships: [

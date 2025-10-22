@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import verifiedBadge from "@/assets/verified-badge.png";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -20,6 +22,7 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [copiedId, setCopiedId] = useState(false);
+  const [doctor, setDoctor] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -47,6 +50,15 @@ const Profile = () => {
       .select("*")
       .eq("user_id", session.user.id)
       .single();
+
+    if (profileData?.user_type === 'doctor') {
+      const { data: doctorData } = await supabase
+        .from("doctors")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
+      setDoctor(doctorData);
+    }
 
     setProfile(profileData);
     setWallet(walletData);
@@ -187,7 +199,12 @@ const Profile = () => {
                 </label>
               </div>
               
-              <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
+                {doctor?.is_verified && (
+                  <img src={verifiedBadge} alt="موثق" className="w-7 h-7 mt-4" />
+                )}
+              </div>
               <Badge className="mt-2" variant={profile?.user_type === 'doctor' ? 'default' : 'secondary'}>
                 {profile?.user_type === 'doctor' ? '👨‍⚕️ دكتور' : '👤 مستخدم'}
               </Badge>
@@ -208,8 +225,59 @@ const Profile = () => {
           </CardContent>
         </Card>
 
+        {/* Verification Card for Doctors */}
+        {profile?.user_type === 'doctor' && !doctor?.is_verified && (
+          <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0 border-primary/20">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <img src={verifiedBadge} alt="توثيق" className="w-6 h-6" />
+                التوثيق والتطوير
+              </CardTitle>
+              <CardDescription>احصل على علامة التوثيق لتظهر في أول النتائج</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground mb-4">
+                التوثيق يساعدك على زيادة ثقة المرضى وظهورك في قسم "أبرز الأطباء"
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full">
+                    طلب التوثيق
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-center">التوثيق والتطوير</DialogTitle>
+                    <DialogDescription className="text-center pt-4">
+                      للحصول على التوثيق، تواصل مع المشرف عبر واتساب
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <MessageCircle className="w-16 h-16 text-primary" />
+                    <a
+                      href="https://wa.me/201108279642"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full"
+                    >
+                      <Button className="w-full bg-green-500 hover:bg-green-600 rounded-full text-white gap-2">
+                        <MessageCircle className="w-5 h-5" />
+                        تواصل عبر واتساب
+                      </Button>
+                    </a>
+                    <p className="text-sm text-muted-foreground text-center">
+                      +201108279642
+                    </p>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Wallet Info */}
-        <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+        {profile?.user_type !== 'doctor' && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
             <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
           </CardHeader>
@@ -221,6 +289,7 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Edit Profile */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0">
