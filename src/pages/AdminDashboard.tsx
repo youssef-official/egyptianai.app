@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle, XCircle, Users, DollarSign, TrendingUp, Shield, ShieldOff } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Users, DollarSign, TrendingUp, Shield, ShieldOff, Search } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalCommissions: 0 });
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
   const [selectedImage, setSelectedImage] = useState("");
+  const [searchId, setSearchId] = useState("");
+  const [searchResult, setSearchResult] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -220,6 +223,38 @@ const AdminDashboard = () => {
     loadData();
   };
 
+  const handleSearch = async () => {
+    if (!searchId) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء إدخال رقم العملية",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*, profiles(full_name, avatar_url, phone)")
+      .eq("id", searchId.toUpperCase())
+      .maybeSingle();
+
+    if (error || !data) {
+      toast({
+        title: "غير موجود",
+        description: "لم يتم العثور على العملية",
+        variant: "destructive",
+      });
+      setSearchResult(null);
+    } else {
+      setSearchResult(data);
+      toast({
+        title: "تم العثور!",
+        description: "تم العثور على العملية بنجاح",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -263,6 +298,78 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Search Box */}
+        <Card className="mb-6 shadow-medium rounded-3xl border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              البحث عن عملية
+            </CardTitle>
+            <CardDescription>ابحث عن عملية باستخدام رقم العملية (ID)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                placeholder="أدخل رقم العملية... (مثال: ABC1234)"
+                className="text-right rounded-full"
+              />
+              <Button onClick={handleSearch} className="rounded-full">
+                <Search className="w-4 h-4 ml-2" />
+                بحث
+              </Button>
+            </div>
+            {searchResult && (
+              <div className="p-5 bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-2xl space-y-3 animate-fade-in border border-primary/20">
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-16 h-16 border-2 border-primary">
+                    <AvatarImage src={searchResult.profiles?.avatar_url} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                      {searchResult.profiles?.full_name?.charAt(0) || 'م'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
+                    <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-background p-3 rounded-lg">
+                    <p className="text-muted-foreground">رقم العملية</p>
+                    <p className="font-bold text-primary">{searchResult.id}</p>
+                  </div>
+                  <div className="bg-background p-3 rounded-lg">
+                    <p className="text-muted-foreground">المبلغ</p>
+                    <p className="font-bold text-primary">{searchResult.amount} جنيه</p>
+                  </div>
+                  <div className="bg-background p-3 rounded-lg">
+                    <p className="text-muted-foreground">التاريخ</p>
+                    <p className="font-bold">{new Date(searchResult.created_at).toLocaleString('ar-EG', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</p>
+                  </div>
+                  <div className="bg-background p-3 rounded-lg">
+                    <p className="text-muted-foreground">النوع</p>
+                    <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
+                  </div>
+                </div>
+                {searchResult.description && (
+                  <div className="bg-background p-3 rounded-lg">
+                    <p className="text-muted-foreground text-sm">الوصف</p>
+                    <p className="font-medium">{searchResult.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="deposits" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5">

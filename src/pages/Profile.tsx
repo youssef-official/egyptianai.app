@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
@@ -316,6 +316,31 @@ const Profile = () => {
           </CardContent>
         </Card>
         )}
+
+        {/* Support Section */}
+        <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-t-3xl">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <HeadphonesIcon className="w-5 h-5 text-green-600" />
+              الدعم والمساعدة
+            </CardTitle>
+            <CardDescription>تواصل معنا للحصول على المساعدة</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                هل تحتاج إلى مساعدة؟ فريق الدعم متاح لمساعدتك
+              </p>
+              <a
+                href="mailto:youssef.official.2411@gmail.com"
+                className="flex items-center justify-center gap-2 p-3 bg-secondary hover:bg-secondary/80 rounded-full transition-all"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">youssef.official.2411@gmail.com</span>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Edit Profile */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0">

@@ -204,26 +204,44 @@ const Doctors = () => {
           رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(2)} جنيه</span>
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {doctors.map((doctor) => (
-            <Card key={doctor.id} className="shadow-medium animate-fade-in">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white text-2xl font-bold">
-                    {doctor.profiles.full_name.charAt(0)}
+            <Card key={doctor.id} className="shadow-medium animate-fade-in hover:shadow-strong transition-all">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="relative">
+                    {doctor.profiles?.avatar_url ? (
+                      <img 
+                        src={doctor.profiles.avatar_url} 
+                        alt={doctor.profiles.full_name}
+                        className="w-20 h-20 rounded-full object-cover border-4 border-primary/20"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-primary/20">
+                        {doctor.profiles?.full_name?.charAt(0) || 'د'}
+                      </div>
+                    )}
+                    {doctor.is_verified && (
+                      <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-white text-xs border-2 border-background">
+                        ✓
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <CardTitle>د. {doctor.profiles.full_name}</CardTitle>
-                    <CardDescription>{doctor.specialization_ar}</CardDescription>
+                  <div>
+                    <CardTitle className="text-lg">د. {doctor.profiles?.full_name}</CardTitle>
+                    <CardDescription className="text-sm mt-1">{doctor.specialization_ar}</CardDescription>
+                    {doctor.profiles?.phone && (
+                      <p className="text-xs text-muted-foreground mt-1">📱 {doctor.profiles.phone}</p>
+                    )}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 {doctor.bio_ar && (
-                  <p className="text-sm text-muted-foreground mb-4">{doctor.bio_ar}</p>
+                  <p className="text-sm text-muted-foreground text-center line-clamp-2">{doctor.bio_ar}</p>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">{doctor.price} جنيه</span>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-xl font-bold text-primary">{doctor.price} جنيه</span>
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button 
