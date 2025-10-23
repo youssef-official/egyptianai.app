@@ -168,7 +168,7 @@ const Doctors = () => {
 
           <h1 className="text-3xl font-bold text-center mb-8">اختر التخصص الطبي</h1>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {departments.map((dept) => (
               <Card
                 key={dept.id}
@@ -204,7 +204,7 @@ const Doctors = () => {
           رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(2)} جنيه</span>
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {doctors.map((doctor) => (
             <Card key={doctor.id} className="shadow-medium animate-fade-in">
               <CardHeader>

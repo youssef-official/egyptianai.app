@@ -115,7 +115,7 @@ const Auth = () => {
             <Stethoscope className="w-12 h-12 text-white" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-            AI Egyptian Doctor
+            Ai | Egyptian Doctor
           </CardTitle>
           <CardDescription className="text-base">
             {isLogin ? "سجل دخولك للمتابعة" : "أنشئ حساباً جديداً"}
@@ -224,44 +224,17 @@ const Auth = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                البريد الإلكتروني
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="text-right"
-                placeholder="example@email.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                كلمة المرور
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="text-right"
-                minLength={6}
-              />
-            </div>
 
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-glow transition-all rounded-full h-11 text-base font-semibold" 
               disabled={loading}
             >
-              {loading ? "جاري التحميل..." : isLogin ? "تسجيل الدخول" : "إنشاء حساب"}
+              {loading ? (
+                <span className="inline-block w-5 h-5 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
+              ) : (
+                isLogin ? "تسجيل الدخول" : "إنشاء حساب"
+              )}
             </Button>
 
             <div className="relative">

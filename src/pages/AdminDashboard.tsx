@@ -291,7 +291,24 @@ const AdminDashboard = () => {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full rounded-full" size="sm">
+                      <Button 
+                        variant="outline" 
+                        className="w-full rounded-full" 
+                        size="sm"
+                        onClick={async () => {
+                          const path: string = req.proof_image_url || '';
+                          if (path.startsWith('http')) {
+                            setSelectedImage(path);
+                            return;
+                          }
+                          const { data, error } = await supabase.storage
+                            .from('deposit-proofs')
+                            .createSignedUrl(path, 60 * 60);
+                          if (!error && data?.signedUrl) {
+                            setSelectedImage(data.signedUrl);
+                          }
+                        }}
+                      >
                         عرض إثبات الدفع
                       </Button>
                     </DialogTrigger>
@@ -299,7 +316,9 @@ const AdminDashboard = () => {
                       <DialogHeader>
                         <DialogTitle>إثبات الدفع</DialogTitle>
                       </DialogHeader>
-                      <img src={req.proof_image_url} alt="Proof" className="w-full rounded-lg" />
+                      {selectedImage && (
+                        <img src={selectedImage} alt="Proof" className="w-full rounded-lg" />
+                      )}
                     </DialogContent>
                   </Dialog>
 

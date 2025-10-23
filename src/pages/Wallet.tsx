@@ -55,16 +55,13 @@ const Wallet = () => {
       // Upload proof image
       const fileExt = proofImage.name.split('.').pop();
       const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const path = `${user!.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
         .from('deposit-proofs')
-        .upload(fileName, proofImage);
+        .upload(path, proofImage);
 
       if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('deposit-proofs')
-        .getPublicUrl(fileName);
 
       // Create deposit request
       await supabase
@@ -73,7 +70,7 @@ const Wallet = () => {
           user_id: user!.id,
           amount: parseFloat(amount),
           payment_method: paymentMethod,
-          proof_image_url: urlData.publicUrl,
+          proof_image_url: path,
           status: "pending"
         });
 
