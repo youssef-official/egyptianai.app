@@ -6,9 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Stethoscope, Wallet, Search, LogOut, TrendingUp } from "lucide-react";
+import { Stethoscope, Wallet, Search, LogOut, TrendingUp, Plus, PauseCircle, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 const DoctorDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -19,6 +23,16 @@ const DoctorDashboard = () => {
   const [searchResult, setSearchResult] = useState<any>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [newRequest, setNewRequest] = useState({
+    doctor_name: "",
+    phone_number: "",
+    address: "",
+    specialization_ar: "",
+    department_id: "",
+    consultation_fee: "",
+    bio_ar: ""
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -72,11 +86,19 @@ const DoctorDashboard = () => {
 
     setWallet(walletData);
 
+    // Get departments
+    const { data: departmentsData } = await supabase
+      .from("medical_departments")
+      .select("*")
+      .order("name_ar");
+
+    setDepartments(departmentsData || []);
+
     // Get transactions
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select("*, profiles(*)")
+        .select("*, profiles(full_name, avatar_url, phone)")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -159,6 +181,111 @@ const DoctorDashboard = () => {
     navigate("/auth");
   };
 
+  const handleCreateRequest = async () => {
+    if (!newRequest.doctor_name || !newRequest.phone_number || !newRequest.department_id || !newRequest.consultation_fee) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (doctor?.is_active) {
+      toast({
+        title: "تنبيه",
+        description: "لديك طلب نشط بالفعل. قم بإيقافه أولاً لإنشاء طلب جديد",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (doctor) {
+        // Update existing doctor
+        await supabase
+          .from("doctors")
+          .update({
+            doctor_name: newRequest.doctor_name,
+            phone_number: newRequest.phone_number,
+            address: newRequest.address,
+            specialization_ar: newRequest.specialization_ar,
+            department_id: newRequest.department_id,
+            consultation_fee: parseFloat(newRequest.consultation_fee),
+            bio_ar: newRequest.bio_ar,
+            is_active: true,
+          })
+          .eq("id", doctor.id);
+      } else {
+        // Create new doctor
+        const { error: insertError } = await supabase
+          .from("doctors")
+          .insert([{
+            user_id: user.id,
+            doctor_name: newRequest.doctor_name,
+            phone_number: newRequest.phone_number,
+            address: newRequest.address,
+            specialization_ar: newRequest.specialization_ar,
+            specialization_en: newRequest.specialization_ar,
+            department_id: newRequest.department_id,
+            consultation_fee: parseFloat(newRequest.consultation_fee),
+            bio_ar: newRequest.bio_ar,
+            is_active: true,
+            price: parseFloat(newRequest.consultation_fee),
+            whatsapp_number: newRequest.phone_number,
+          }]);
+        
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "تم!",
+        description: "تم إنشاء الطلب بنجاح وأصبح نشطاً",
+      });
+
+      checkDoctor();
+      setNewRequest({
+        doctor_name: "",
+        phone_number: "",
+        address: "",
+        specialization_ar: "",
+        department_id: "",
+        consultation_fee: "",
+        bio_ar: ""
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleRequestStatus = async () => {
+    if (!doctor) return;
+
+    try {
+      await supabase
+        .from("doctors")
+        .update({ is_active: !doctor.is_active })
+        .eq("id", doctor.id);
+
+      toast({
+        title: doctor.is_active ? "تم الإيقاف" : "تم التفعيل",
+        description: doctor.is_active ? "تم إيقاف الطلب" : "تم تفعيل الطلب",
+      });
+
+      checkDoctor();
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -186,6 +313,41 @@ const DoctorDashboard = () => {
             تسجيل خروج
           </Button>
         </div>
+
+        {/* Request Status Card */}
+        {doctor && (
+          <Card className="mb-6 shadow-medium">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>حالة الطلب</span>
+                {doctor.is_active ? (
+                  <span className="text-green-500 text-sm">● نشط</span>
+                ) : (
+                  <span className="text-gray-500 text-sm">● متوقف</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={toggleRequestStatus}
+                variant={doctor.is_active ? "destructive" : "default"}
+                className="w-full gap-2"
+              >
+                {doctor.is_active ? (
+                  <>
+                    <PauseCircle className="w-4 h-4" />
+                    إيقاف الطلب
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="w-4 h-4" />
+                    تفعيل الطلب
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -263,8 +425,16 @@ const DoctorDashboard = () => {
           </Card>
         </div>
 
-        {/* Search Box */}
-        <Card className="mb-8 shadow-medium">
+        {/* Tabs for Requests */}
+        <Tabs defaultValue="consultations" className="mb-8">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="consultations">الاستشارات</TabsTrigger>
+            <TabsTrigger value="new-request">إنشاء طلب جديد</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="consultations" className="space-y-6">
+            {/* Search Box */}
+            <Card className="shadow-medium">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="w-5 h-5" />
@@ -294,33 +464,167 @@ const DoctorDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Recent Transactions */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle>آخر الاستشارات</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {transactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                  <div>
-                    <p className="font-semibold">{transaction.profiles?.full_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(transaction.created_at).toLocaleString('ar-EG')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">ID: {transaction.id}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-primary">{transaction.amount} جنيه</p>
-                  </div>
+            {/* Recent Transactions */}
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle>آخر الاستشارات</CardTitle>
+                <CardDescription>المستخدمين الذين تواصلوا معك</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {transactions.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                        <AvatarImage src={transaction.profiles?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                          {transaction.profiles?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold">{transaction.profiles?.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {transaction.profiles?.phone && `📱 ${transaction.profiles?.phone}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(transaction.created_at).toLocaleString('ar-EG')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">ID: {transaction.id}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{transaction.amount} جنيه</p>
+                      </div>
+                    </div>
+                  ))}
+                  {transactions.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">لا توجد استشارات بعد</p>
+                  )}
                 </div>
-              ))}
-              {transactions.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">لا توجد استشارات بعد</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="new-request">
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  إنشاء طلب جديد
+                </CardTitle>
+                <CardDescription>
+                  {doctor?.is_active ? 
+                    "لديك طلب نشط بالفعل. قم بإيقافه أولاً لإنشاء طلب جديد" : 
+                    "املأ البيانات لإنشاء طلب جديد وظهوره للمستخدمين"
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="doctor_name">اسم الطبيب *</Label>
+                  <Input
+                    id="doctor_name"
+                    value={newRequest.doctor_name}
+                    onChange={(e) => setNewRequest({...newRequest, doctor_name: e.target.value})}
+                    placeholder="د. محمد أحمد"
+                    className="text-right"
+                    disabled={doctor?.is_active}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">رقم التليفون *</Label>
+                  <Input
+                    id="phone_number"
+                    value={newRequest.phone_number}
+                    onChange={(e) => setNewRequest({...newRequest, phone_number: e.target.value})}
+                    placeholder="+201234567890"
+                    className="text-right"
+                    disabled={doctor?.is_active}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">العنوان</Label>
+                  <Input
+                    id="address"
+                    value={newRequest.address}
+                    onChange={(e) => setNewRequest({...newRequest, address: e.target.value})}
+                    placeholder="القاهرة، مصر"
+                    className="text-right"
+                    disabled={doctor?.is_active}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department">التخصص / القسم *</Label>
+                  <Select 
+                    value={newRequest.department_id} 
+                    onValueChange={(value) => {
+                      const dept = departments.find(d => d.id === value);
+                      setNewRequest({
+                        ...newRequest, 
+                        department_id: value,
+                        specialization_ar: dept?.name_ar || ""
+                      });
+                    }}
+                    disabled={doctor?.is_active}
+                  >
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="اختر التخصص" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name_ar}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="consultation_fee">سعر الاستشارة (جنيه) *</Label>
+                  <Input
+                    id="consultation_fee"
+                    type="number"
+                    min="1"
+                    value={newRequest.consultation_fee}
+                    onChange={(e) => setNewRequest({...newRequest, consultation_fee: e.target.value})}
+                    placeholder="100"
+                    className="text-right"
+                    disabled={doctor?.is_active}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">نبذة عنك</Label>
+                  <Textarea
+                    id="bio"
+                    value={newRequest.bio_ar}
+                    onChange={(e) => setNewRequest({...newRequest, bio_ar: e.target.value})}
+                    placeholder="نبذة مختصرة عن خبرتك وتخصصك..."
+                    className="text-right min-h-[100px]"
+                    disabled={doctor?.is_active}
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleCreateRequest}
+                  className="w-full bg-gradient-to-r from-primary to-primary-light"
+                  disabled={doctor?.is_active}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  إنشاء الطلب
+                </Button>
+
+                {doctor?.is_active && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    لديك طلب نشط. قم بإيقافه من أعلى الصفحة لإنشاء طلب جديد
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       <BottomNav />
     </div>

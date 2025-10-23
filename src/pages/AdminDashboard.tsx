@@ -58,12 +58,12 @@ const AdminDashboard = () => {
   const loadData = async () => {
     const { data: deposits } = await supabase
       .from("deposit_requests")
-      .select("*, profiles(full_name)")
+      .select("*, profiles(full_name, avatar_url, phone)")
       .order("created_at", { ascending: false });
 
     const { data: withdraws } = await supabase
       .from("withdraw_requests")
-      .select("*, doctors(doctor_name, user_id)")
+      .select("*, doctors(doctor_name, user_id, phone_number, image_url)")
       .order("created_at", { ascending: false });
 
     const { data: usersData } = await supabase
@@ -265,9 +265,10 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="deposits" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="deposits">الإيداع</TabsTrigger>
             <TabsTrigger value="withdrawals">السحب</TabsTrigger>
+            <TabsTrigger value="active-doctors">الطلبات النشطة</TabsTrigger>
             <TabsTrigger value="doctors">الأطباء</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
           </TabsList>
@@ -276,14 +277,29 @@ const AdminDashboard = () => {
             {depositRequests.map((req) => (
               <Card key={req.id} className="rounded-3xl border-0 shadow-medium">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{req.profiles?.full_name}</CardTitle>
-                      <CardDescription>{req.payment_method}</CardDescription>
+                  <div className="flex items-center gap-4 mb-2">
+                    <Avatar className="w-14 h-14 border-2 border-primary/20">
+                      <AvatarImage src={req.profiles?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        {req.profiles?.full_name?.charAt(0) || 'م'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{req.profiles?.full_name}</CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <span>{req.payment_method}</span>
+                            {req.profiles?.phone && (
+                              <span className="text-xs">• {req.profiles?.phone}</span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                          {req.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
-                      {req.status}
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -361,14 +377,29 @@ const AdminDashboard = () => {
             {withdrawRequests.map((req) => (
               <Card key={req.id} className="rounded-3xl border-0 shadow-medium">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{req.doctors?.doctor_name}</CardTitle>
-                      <CardDescription>طلب سحب</CardDescription>
+                  <div className="flex items-center gap-4 mb-2">
+                    <Avatar className="w-14 h-14 border-2 border-primary/20">
+                      <AvatarImage src={req.doctors?.image_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        {req.doctors?.doctor_name?.charAt(0) || 'د'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{req.doctors?.doctor_name}</CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <span>طلب سحب</span>
+                            {req.doctors?.phone_number && (
+                              <span className="text-xs">• {req.doctors?.phone_number}</span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                          {req.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
-                      {req.status}
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -411,6 +442,46 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="active-doctors" className="space-y-4">
+            <Card className="rounded-3xl border-0 shadow-medium">
+              <CardHeader>
+                <CardTitle>الطلبات النشطة للأطباء</CardTitle>
+                <CardDescription>الأطباء الذين لديهم طلبات نشطة حالياً</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {doctors.filter(d => d.is_active).length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">لا توجد طلبات نشطة حالياً</p>
+                )}
+                {doctors.filter(d => d.is_active).map((doctor) => (
+                  <div key={doctor.id} className="flex items-center gap-4 p-4 bg-secondary rounded-2xl">
+                    <Avatar className="w-16 h-16 border-2 border-primary/20">
+                      <AvatarImage src={doctor.image_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        {doctor.doctor_name?.charAt(0) || 'د'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold">{doctor.doctor_name || 'غير محدد'}</h3>
+                        {doctor.is_verified && (
+                          <img src={verifiedBadge} alt="موثق" className="w-5 h-5" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{doctor.specialization_ar}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        رقم التليفون: {doctor.phone_number || 'غير محدد'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        السعر: {doctor.consultation_fee || 0} جنيه • العنوان: {doctor.address || 'غير محدد'}
+                      </p>
+                    </div>
+                    <Badge variant="default">نشط</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="doctors" className="space-y-4">
