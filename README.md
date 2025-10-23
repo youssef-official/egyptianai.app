@@ -69,7 +69,7 @@ npm run build
 
 ## 🌐 رابط المشروع
 
-**URL**: https://lovable.dev/projects/6089bbd1-98ed-4fe1-99c2-2cb756c7b01b
+**URL**: https://egyptianai.app
 
 ## 📄 الترخيص
 
