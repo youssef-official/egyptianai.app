@@ -108,8 +108,11 @@ const Consultation = () => {
         .update({ balance: newDoctorBalance })
         .eq("user_id", String(doctor.user_id));
 
-      // Create transaction
-      const txId = `CS${Date.now()}`;
+      // Create transaction with unique ID
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const txId = `CS${timestamp}${random}`;
+      
       await supabase
         .from("transactions")
         .insert({

@@ -13,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const DoctorDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -24,6 +25,7 @@ const DoctorDashboard = () => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState({
     doctor_name: "",
     phone_number: "",
@@ -104,6 +106,16 @@ const DoctorDashboard = () => {
         .limit(10);
 
       setTransactions(transactionsData || []);
+
+      // Get withdraw requests
+      const { data: withdrawData } = await supabase
+        .from("withdraw_requests")
+        .select("*")
+        .eq("doctor_id", doctorData.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      setWithdrawRequests(withdrawData || []);
     }
 
     setLoading(false);
@@ -137,8 +149,11 @@ const DoctorDashboard = () => {
   const handleWithdraw = async () => {
     if (!withdrawAmount || !doctor) return;
 
-    const amount = parseFloat(withdrawAmount);
-    if (amount <= 0 || amount > parseFloat(wallet.balance)) {
+    const netAmount = parseFloat(withdrawAmount); // المبلغ الصافي الذي سيستلمه الدكتور
+    const commission = netAmount / 0.9 * 0.1; // حساب العمولة
+    const totalAmount = netAmount + commission; // المبلغ الإجمالي الذي سيتم خصمه
+
+    if (totalAmount <= 0 || totalAmount > parseFloat(wallet.balance)) {
       toast({
         title: "خطأ",
         description: "المبلغ غير صحيح أو أكبر من الرصيد المتاح",
@@ -148,22 +163,19 @@ const DoctorDashboard = () => {
     }
 
     try {
-      const commission = amount * 0.1;
-      const netAmount = amount - commission;
-
       await supabase
         .from("withdraw_requests")
         .insert({
           doctor_id: doctor.id,
-          amount: amount,
-          net_amount: netAmount,
+          amount: totalAmount, // المبلغ الإجمالي الذي سيُخصم
+          net_amount: netAmount, // المبلغ الصافي الذي سيستلمه الدكتور
           commission: commission,
           status: "pending"
         });
 
       toast({
         title: "تم الإرسال!",
-        description: `تم إرسال طلب السحب. المبلغ الصافي: ${netAmount.toFixed(2)} جنيه (بعد خصم عمولة 10%)`,
+        description: `تم إرسال طلب سحب ${netAmount.toFixed(2)} جنيه. سيتم خصم ${totalAmount.toFixed(2)} جنيه من رصيدك (شامل عمولة 10%)`,
       });
 
       setWithdrawAmount("");
@@ -289,7 +301,7 @@ const DoctorDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary text-xl">جاري التحميل...</div>
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -313,6 +325,19 @@ const DoctorDashboard = () => {
             تسجيل خروج
           </Button>
         </div>
+
+        {/* Admin Notes Alerts for Withdraw Requests */}
+        {withdrawRequests.filter(req => req.admin_notes && req.status !== 'pending').map((req) => (
+          <Alert key={req.id} className="mb-4 bg-blue-50 border-blue-200 animate-fade-in">
+            <AlertDescription className="text-blue-900 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="font-semibold mb-1">ملاحظة من الإدارة بخصوص طلب السحب {req.status === 'approved' ? 'المقبول' : 'المرفوض'}:</p>
+                <p className="text-sm">{req.admin_notes}</p>
+                <p className="text-xs mt-2 text-blue-700">المبلغ الصافي: {req.net_amount} جنيه - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ))}
 
         {/* Request Status Card */}
         {doctor && (
@@ -391,11 +416,11 @@ const DoctorDashboard = () => {
                         />
                       </div>
                       {withdrawAmount && (
-                        <div className="bg-secondary p-3 rounded-lg text-sm">
-                          <p>المبلغ المطلوب: {parseFloat(withdrawAmount).toFixed(2)} جنيه</p>
-                          <p>العمولة (10%): {(parseFloat(withdrawAmount) * 0.1).toFixed(2)} جنيه</p>
-                          <p className="font-bold text-primary">
-                            المبلغ الصافي: {(parseFloat(withdrawAmount) * 0.9).toFixed(2)} جنيه
+                        <div className="bg-secondary p-3 rounded-lg text-sm space-y-1">
+                          <p>المبلغ الصافي (الذي ستستلمه): <span className="font-bold text-primary">{parseFloat(withdrawAmount).toFixed(2)} جنيه</span></p>
+                          <p>العمولة (10%): {(parseFloat(withdrawAmount) / 0.9 * 0.1).toFixed(2)} جنيه</p>
+                          <p className="font-bold text-destructive border-t pt-2 mt-2">
+                            سيتم خصم: {(parseFloat(withdrawAmount) / 0.9).toFixed(2)} جنيه من رصيدك
                           </p>
                         </div>
                       )}

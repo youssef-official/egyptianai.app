@@ -148,7 +148,7 @@ const AdminDashboard = () => {
     loadData();
   };
 
-  const handleWithdrawApprove = async (requestId: string, netAmount: number, doctorUserId: string) => {
+  const handleWithdrawApprove = async (requestId: string, totalAmount: number, doctorUserId: string) => {
     const { data: wallet } = await supabase
       .from("wallets")
       .select("balance")
@@ -156,7 +156,7 @@ const AdminDashboard = () => {
       .single();
 
     if (wallet) {
-      const newBalance = Number(wallet.balance) - netAmount;
+      const newBalance = Number(wallet.balance) - totalAmount; // خصم المبلغ الإجمالي
       
       await supabase
         .from("wallets")
@@ -174,7 +174,7 @@ const AdminDashboard = () => {
 
     toast({
       title: "تمت الموافقة!",
-      description: "تم خصم المبلغ من رصيد الطبيب",
+      description: "تم خصم المبلغ الإجمالي من رصيد الطبيب",
     });
 
     loadData();
@@ -527,7 +527,7 @@ const AdminDashboard = () => {
                       />
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => handleWithdrawApprove(req.id, req.net_amount, req.doctors.user_id)}
+                          onClick={() => handleWithdrawApprove(req.id, req.amount, req.doctors.user_id)}
                           className="flex-1 bg-green-600 hover:bg-green-700 rounded-full"
                           size="sm"
                         >

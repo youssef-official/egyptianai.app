@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Upload, Wallet as WalletIcon } from "lucide-react";
+import { ArrowRight, Upload, Wallet as WalletIcon, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
@@ -16,11 +17,13 @@ const Wallet = () => {
   const [proofImage, setProofImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [wallet, setWallet] = useState<any>(null);
+  const [depositRequests, setDepositRequests] = useState<any[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     loadWallet();
+    loadDepositRequests();
   }, []);
 
   const loadWallet = async () => {
@@ -32,6 +35,19 @@ const Wallet = () => {
         .eq("user_id", user.id)
         .single();
       setWallet(data);
+    }
+  };
+
+  const loadDepositRequests = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("deposit_requests")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setDepositRequests(data || []);
     }
   };
 
@@ -82,7 +98,7 @@ const Wallet = () => {
       setAmount("");
       setPaymentMethod("");
       setProofImage(null);
-      navigate("/");
+      loadDepositRequests();
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -103,6 +119,19 @@ const Wallet = () => {
             العودة
           </Button>
         </div>
+
+        {/* Admin Notes Alerts */}
+        {depositRequests.filter(req => req.admin_notes && req.status !== 'pending').map((req) => (
+          <Alert key={req.id} className="mb-4 bg-blue-50 border-blue-200 animate-fade-in">
+            <AlertDescription className="text-blue-900 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="font-semibold mb-1">ملاحظة من الإدارة بخصوص طلب {req.status === 'approved' ? 'المقبول' : 'المرفوض'}:</p>
+                <p className="text-sm">{req.admin_notes}</p>
+                <p className="text-xs mt-2 text-blue-700">المبلغ: {req.amount} جنيه - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ))}
 
         <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
