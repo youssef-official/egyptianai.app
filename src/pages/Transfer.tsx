@@ -68,20 +68,48 @@ const Transfer = () => {
     setLoading(true);
 
     try {
-      // Check if receiver exists
-      const { data: receiverWallet, error: receiverError } = await supabase
+      // Check if receiver exists by ID or email
+      let receiverWallet: any = null;
+      let receiverUserId = receiverId;
+
+      // Try to find by user_id first
+      const { data: walletById } = await supabase
         .from("wallets")
         .select("*")
         .eq("user_id", receiverId)
-        .single();
+        .maybeSingle();
 
-      if (receiverError || !receiverWallet) {
+      if (walletById) {
+        receiverWallet = walletById;
+      } else {
+        // Try to find by email
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", receiverId)
+          .maybeSingle();
+
+        if (profile) {
+          const { data: walletByEmail } = await supabase
+            .from("wallets")
+            .select("*")
+            .eq("user_id", profile.id)
+            .maybeSingle();
+          
+          if (walletByEmail) {
+            receiverWallet = walletByEmail;
+            receiverUserId = profile.id;
+          }
+        }
+      }
+
+      if (!receiverWallet) {
         throw new Error("المستخدم المستقبل غير موجود");
       }
 
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (user!.id === receiverId) {
+      if (user!.id === receiverUserId) {
         throw new Error("لا يمكنك التحويل لنفسك");
       }
 
@@ -97,7 +125,7 @@ const Transfer = () => {
       await supabase
         .from("wallets")
         .update({ balance: newReceiverBalance })
-        .eq("user_id", String(receiverId));
+        .eq("user_id", receiverUserId);
 
       // Create transaction
       const transactionId = `TR${Date.now()}`;
@@ -106,7 +134,7 @@ const Transfer = () => {
         .insert({
           id: transactionId,
           user_id: user!.id,
-          receiver_id: receiverId,
+          receiver_id: receiverUserId,
           amount: transferAmount,
           type: "transfer",
           description: "تحويل رصيد"
@@ -155,18 +183,18 @@ const Transfer = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleTransfer} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="receiverId">معرّف المستقبل (User ID)</Label>
+                <Label htmlFor="receiverId">معرّف المستقبل (User ID أو البريد الإلكتروني)</Label>
                 <Input
                   id="receiverId"
                   type="text"
                   value={receiverId}
                   onChange={(e) => setReceiverId(e.target.value)}
-                  placeholder="أدخل معرّف المستخدم..."
+                  placeholder="أدخل User ID أو البريد الإلكتروني..."
                   required
                   className="text-right"
                 />
                 <p className="text-xs text-muted-foreground">
-                  يمكن الحصول على المعرف من المستخدم المستقبل
+                  يمكنك استخدام User ID أو البريد الإلكتروني للمستخدم المستقبل
                 </p>
               </div>
 

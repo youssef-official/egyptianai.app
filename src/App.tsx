@@ -12,6 +12,7 @@ import Transfer from "./pages/Transfer";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import Consultation from "./pages/Consultation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/consultation" element={<Consultation />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
