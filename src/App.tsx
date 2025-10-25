@@ -15,6 +15,7 @@ const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Consultation = lazy(() => import("./pages/Consultation"));
+const AIChat = lazy(() => import("./pages/AIChat"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/consultation" element={<Consultation />} />
+            <Route path="/ai-chat" element={<AIChat />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

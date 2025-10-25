@@ -1,1 +1,7 @@
 project_id = "buddtmkaqroduphvolhd"
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
