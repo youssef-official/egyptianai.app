@@ -206,7 +206,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'منصة الاستشارات الطبية <onboarding@resend.dev>',
+        from: 'منصة الاستشارات الطبية <team@egyptianai.app>',
         to: [to],
         subject,
         html,
