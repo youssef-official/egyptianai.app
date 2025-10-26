@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Stethoscope, Wallet, LogOut, Bot, Calendar } from "lucide-react";
+import { Stethoscope, Wallet, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
-import FeaturedDoctors from "@/components/FeaturedDoctors";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -14,35 +13,37 @@ const Index = () => {
   const [wallet, setWallet] = useState<any>(null);
   const [consultations, setConsultations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(5);
+  const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    checkUser();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    initUser();
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadUserData(session.user.id);
+        loadUserData(session.user.id, limit);
       } else {
         navigate("/auth");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, limit]);
 
-  const checkUser = async () => {
+  const initUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
     } else {
       setUser(session.user);
-      await loadUserData(session.user.id);
+      await loadUserData(session.user.id, limit);
     }
     setLoading(false);
   };
 
-  const loadUserData = async (userId: string) => {
+  const loadUserData = async (userId: string, lim: number) => {
     const { data: profileData } = await supabase
       .from("profiles")
       .select("*")
@@ -57,14 +58,19 @@ const Index = () => {
 
     const { data: consultationsData } = await supabase
       .from("consultations")
-      .select("id, doctor_name, date, status")
+      .select("*, doctors(*)")
       .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .limit(3);
+      .order("consultation_date", { ascending: false })
+      .limit(lim);
 
     setProfile(profileData);
     setWallet(walletData);
     setConsultations(consultationsData || []);
+    setHasMore((consultationsData?.length || 0) >= lim);
+  };
+
+  const loadMore = () => {
+    setLimit((prev) => prev + 5);
   };
 
   const handleLogout = async () => {
@@ -88,7 +94,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 animate-fade-in">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong">
               <Stethoscope className="w-7 h-7 text-white" />
@@ -108,7 +114,7 @@ const Index = () => {
         </div>
 
         {/* Wallet Card */}
-        <Card className="mb-6 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0">
+        <Card className="mb-6 shadow-strong rounded-3xl overflow-hidden border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4">
             <div className="flex items-center gap-2 text-base">
               <Wallet className="w-5 h-5" />
@@ -139,80 +145,45 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        <FeaturedDoctors />
-
-        {/* Main Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
-            onClick={() => navigate("/doctors")}
-          >
-            <CardHeader className="p-5">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Stethoscope className="w-7 h-7 text-primary" />
-                </div>
-                <div className="text-sm font-semibold">استشارة طبية</div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
-            onClick={() => navigate("/ai-chat")}
-          >
-            <CardHeader className="p-5">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Bot className="w-7 h-7 text-primary" />
-                </div>
-                <div className="text-sm font-semibold">تحدث مع الذكاء الاصطناعي</div>
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* آخر الاستشارات */}
-        <Card className="shadow-strong animate-fade-in rounded-3xl border-0 shadow-medium">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            آخر الاستشارات
-          </CardHeader>
-          <CardContent className="p-5 space-y-3">
-            {consultations.length > 0 ? (
-              consultations.map((c) => (
-                <div
-                  key={c.id}
-                  className="p-3 rounded-xl bg-white/50 backdrop-blur-sm flex justify-between items-center border border-gray-100"
-                >
+        {/* Last Consultations */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-4">آخر الاستشارات</h2>
+          {consultations.length === 0 ? (
+            <p className="text-center text-muted-foreground">لم تقم بأي استشارة بعد.</p>
+          ) : (
+            <div className="space-y-4">
+              {consultations.map((c) => (
+                <Card key={c.id} className="shadow-medium border-0 rounded-2xl p-4 flex justify-between items-center">
                   <div>
-                    <div className="font-semibold text-sm text-gray-800">{c.doctor_name}</div>
-                    <div className="text-xs text-gray-500">{new Date(c.date).toLocaleDateString()}</div>
+                    <h3 className="font-semibold">{c.doctors?.doctor_name || "دكتور مجهول"}</h3>
+                    <p className="text-sm text-muted-foreground">{c.doctors?.specialization || ""}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تاريخ الاستشارة: {new Date(c.consultation_date).toLocaleDateString("ar-EG")}
+                    </p>
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                      c.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : c.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
+                  <Button 
+                    className="bg-gradient-to-r from-primary to-primary-light"
+                    onClick={() => navigate(`/consultation/${c.id}`)}
                   >
-                    {c.status === "completed"
-                      ? "مكتملة"
-                      : c.status === "pending"
-                      ? "قيد الانتظار"
-                      : "ملغاة"}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 text-sm">لا توجد استشارات بعد</p>
-            )}
-          </CardContent>
-        </Card>
+                    عرض التفاصيل
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+          {hasMore && consultations.length > 0 && (
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline"
+                className="rounded-full"
+                onClick={loadMore}
+              >
+                تحميل المزيد
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-
       <BottomNav />
     </div>
   );
