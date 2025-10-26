@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Stethoscope, Wallet, LogOut, Bot, Calendar } from "lucide-react";
+import { Wallet, LogOut, Bot, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FeaturedDoctors from "@/components/FeaturedDoctors";
@@ -12,7 +12,6 @@ const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [wallet, setWallet] = useState<any>(null);
-  const [consultations, setConsultations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -55,16 +54,8 @@ const Index = () => {
       .eq("user_id", userId)
       .single();
 
-    const { data: consultationsData } = await supabase
-      .from("consultations")
-      .select("id, doctor_name, date, status")
-      .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .limit(3);
-
     setProfile(profileData);
     setWallet(walletData);
-    setConsultations(consultationsData || []);
   };
 
   const handleLogout = async () => {
@@ -95,7 +86,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
-              <p className="text-xs text-muted-foreground">منصة الاستشارات الطبية</p>
+              <p className="text-xs text-muted-foreground">منصة المستخدم</p>
             </div>
           </div>
           <Button 
@@ -145,20 +136,6 @@ const Index = () => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Card 
             className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
-            onClick={() => navigate("/doctors")}
-          >
-            <CardHeader className="p-5">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Stethoscope className="w-7 h-7 text-primary" />
-                </div>
-                <div className="text-sm font-semibold">استشارة طبية</div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
             onClick={() => navigate("/ai-chat")}
           >
             <CardHeader className="p-5">
@@ -171,46 +148,6 @@ const Index = () => {
             </CardHeader>
           </Card>
         </div>
-
-        {/* آخر الاستشارات */}
-        <Card className="shadow-strong animate-fade-in rounded-3xl border-0 shadow-medium">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            آخر الاستشارات
-          </CardHeader>
-          <CardContent className="p-5 space-y-3">
-            {consultations.length > 0 ? (
-              consultations.map((c) => (
-                <div
-                  key={c.id}
-                  className="p-3 rounded-xl bg-white/50 backdrop-blur-sm flex justify-between items-center border border-gray-100"
-                >
-                  <div>
-                    <div className="font-semibold text-sm text-gray-800">{c.doctor_name}</div>
-                    <div className="text-xs text-gray-500">{new Date(c.date).toLocaleDateString()}</div>
-                  </div>
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                      c.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : c.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {c.status === "completed"
-                      ? "مكتملة"
-                      : c.status === "pending"
-                      ? "قيد الانتظار"
-                      : "ملغاة"}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 text-sm">لا توجد استشارات بعد</p>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       <BottomNav />
