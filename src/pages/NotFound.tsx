@@ -1,7 +1,5 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { motion } from "framer-motion";
-import { Home } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
@@ -11,38 +9,31 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: -40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="mb-6"
-      >
-        <h1 className="text-[8rem] font-extrabold text-gray-800 leading-none">404</h1>
-        <p className="text-2xl font-medium text-gray-600">الصفحة اللي بتدور عليها مش موجودة</p>
-        <p className="text-sm text-gray-500 mt-2">
-          يا إما الصفحة اتنقلت، يا إما حصلت غلطة في العنوان... أو في مصيرنا كلنا.
-        </p>
-      </motion.div>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0f172a] text-white">
+      {/* دوائر إضاءة خلفية */}
+      <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/20 blur-[150px] animate-pulse"></div>
 
-      <motion.a
+      {/* الرقم */}
+      <h1 className="relative z-10 text-[10rem] font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-cyan-300 drop-shadow-[0_0_20px_rgba(56,189,248,0.5)] select-none">
+        404
+      </h1>
+
+      {/* النصوص */}
+      <p className="z-10 mt-2 text-2xl font-semibold text-gray-200">الصفحة مش موجودة</p>
+      <p className="z-10 mt-1 text-gray-400 max-w-sm text-center">
+        يمكن تكون كتبت العنوان غلط، أو الصفحة راحت في إجازة بدون إذنك.
+      </p>
+
+      {/* زر الرجوع */}
+      <a
         href="/"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-white shadow-md transition-colors hover:bg-blue-700"
+        className="z-10 mt-6 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 px-6 py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 hover:shadow-cyan-500/30"
       >
-        <Home size={20} />
-        <span>العودة للرئيسية</span>
-      </motion.a>
+        ارجع للرئيسية
+      </a>
 
-      <motion.div
-        className="absolute bottom-6 text-xs text-gray-400"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-      >
-        &copy; {new Date().getFullYear()} موقعك الجميل. كل الحقوق محفوظة، على الورق على الأقل.
-      </motion.div>
+      {/* تأثير متحرك بسيط في الخلفية */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.1),transparent_70%)] animate-[pulse_5s_infinite_alternate]"></div>
     </div>
   );
 };
