@@ -2,86 +2,117 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Stethoscope, Bot, Wallet, LogOut } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Stethoscope, Wallet, LogOut, Bot, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
+import FeaturedDoctors from "@/components/FeaturedDoctors";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [wallet, setWallet] = useState<any>(null);
   const [consultations, setConsultations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    init();
-  }, []);
+    checkUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadUserData(session.user.id);
+      } else {
+        navigate("/auth");
+      }
+    });
 
-  const init = async () => {
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
+    if (!session) {
       navigate("/auth");
-      return;
+    } else {
+      setUser(session.user);
+      await loadUserData(session.user.id);
     }
-    setUser(session.user);
-    await loadProfile(session.user.id);
-    await loadWallet(session.user.id);
-    await loadConsultations(session.user.id);
+    setLoading(false);
   };
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    setProfile(data);
-  };
+  const loadUserData = async (userId: string) => {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-  const loadWallet = async (userId: string) => {
-    const { data } = await supabase.from("wallets").select("*").eq("user_id", userId).single();
-    setWallet(data);
-  };
-
-  const loadConsultations = async (userId: string) => {
-    const { data } = await supabase
-      .from("consultations")
-      .select("*, doctors(*)")
+    const { data: walletData } = await supabase
+      .from("wallets")
+      .select("*")
       .eq("user_id", userId)
-      .order("consultation_date", { ascending: false })
-      .limit(5);
-    setConsultations(data || []);
+      .single();
+
+    const { data: consultationsData } = await supabase
+      .from("consultations")
+      .select("id, doctor_name, date, status")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(3);
+
+    setProfile(profileData);
+    setWallet(walletData);
+    setConsultations(consultationsData || []);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast({ title: "تم تسجيل الخروج", description: "نراك قريباً!" });
+    toast({
+      title: "تم تسجيل الخروج",
+      description: "نراك قريباً!",
+    });
     navigate("/auth");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong">
               <Stethoscope className="w-7 h-7 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
-              <p className="text-xs text-muted-foreground">منصة الاستشارات الطبية الذكية</p>
+              <p className="text-xs text-muted-foreground">منصة الاستشارات الطبية</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="h-10 w-10 rounded-full p-0">
-            <LogOut className="w-5 h-5" />
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout} 
+            className="gap-2 rounded-full h-10 w-10 p-0"
+          >
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Wallet */}
-        <Card className="mb-6 shadow-strong rounded-3xl overflow-hidden border-0">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-3">
-            <div className="flex items-center gap-2">
+        {/* Wallet Card */}
+        <Card className="mb-6 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4">
+            <div className="flex items-center gap-2 text-base">
               <Wallet className="w-5 h-5" />
-              <span>محفظتي</span>
+              محفظتي
             </div>
           </CardHeader>
           <CardContent className="pt-6 pb-6">
@@ -89,64 +120,99 @@ const Index = () => {
               <div className="text-3xl font-bold text-primary">
                 {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-lg">جنيه</span>
               </div>
-              <Button
-                className="bg-gradient-to-r from-primary to-primary-light rounded-full h-10 px-6"
-                onClick={() => navigate("/wallet")}
-              >
-                إيداع الأموال
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-10 px-6"
+                  onClick={() => navigate("/wallet")}
+                >
+                  إيداع
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="rounded-full h-10 px-6"
+                  onClick={() => navigate("/transfer")}
+                >
+                  تحويل
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <Button
-            className="bg-gradient-to-r from-primary to-primary-light h-24 text-lg font-bold rounded-3xl flex flex-col gap-2"
+        <FeaturedDoctors />
+
+        {/* Main Actions */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card 
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
             onClick={() => navigate("/doctors")}
           >
-            <Stethoscope className="w-6 h-6" />
-            التحدث مع دكتور حقيقي
-          </Button>
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <Stethoscope className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-sm font-semibold">استشارة طبية</div>
+              </div>
+            </CardHeader>
+          </Card>
 
-          <Button
-            variant="outline"
-            className="h-24 text-lg font-bold rounded-3xl flex flex-col gap-2"
-            onClick={() => navigate("/ai-consultation")}
+          <Card 
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            onClick={() => navigate("/ai-chat")}
           >
-            <Bot className="w-6 h-6" />
-            التحدث مع الذكاء الاصطناعي
-          </Button>
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <Bot className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-sm font-semibold">تحدث مع الذكاء الاصطناعي</div>
+              </div>
+            </CardHeader>
+          </Card>
         </div>
 
-        {/* Consultations */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-center">آخر الاستشارات</h2>
-          {consultations.length === 0 ? (
-            <p className="text-center text-muted-foreground">لا توجد استشارات حالياً.</p>
-          ) : (
-            <div className="space-y-4">
-              {consultations.map((c) => (
-                <Card key={c.id} className="rounded-2xl border border-primary/20 shadow-sm p-4 flex justify-between items-center">
+        {/* آخر الاستشارات */}
+        <Card className="shadow-strong animate-fade-in rounded-3xl border-0 shadow-medium">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            آخر الاستشارات
+          </CardHeader>
+          <CardContent className="p-5 space-y-3">
+            {consultations.length > 0 ? (
+              consultations.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-3 rounded-xl bg-white/50 backdrop-blur-sm flex justify-between items-center border border-gray-100"
+                >
                   <div>
-                    <h3 className="font-semibold">{c.doctors?.doctor_name || "دكتور غير معروف"}</h3>
-                    <p className="text-sm text-muted-foreground">{c.doctors?.specialization || ""}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(c.consultation_date).toLocaleDateString("ar-EG")}
-                    </p>
+                    <div className="font-semibold text-sm text-gray-800">{c.doctor_name}</div>
+                    <div className="text-xs text-gray-500">{new Date(c.date).toLocaleDateString()}</div>
                   </div>
-                  <Button
-                    className="bg-gradient-to-r from-primary to-primary-light"
-                    onClick={() => navigate(`/consultation/${c.id}`)}
+                  <span
+                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                      c.status === "completed"
+                        ? "bg-green-100 text-green-700"
+                        : c.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
                   >
-                    عرض
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                    {c.status === "completed"
+                      ? "مكتملة"
+                      : c.status === "pending"
+                      ? "قيد الانتظار"
+                      : "ملغاة"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 text-sm">لا توجد استشارات بعد</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
       <BottomNav />
     </div>
   );
