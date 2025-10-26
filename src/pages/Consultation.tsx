@@ -124,6 +124,17 @@ const Consultation = () => {
           description: `استشارة مع ${doctor.doctor_name}`
         });
 
+      // Insert into consultations table
+      await supabase
+        .from("consultations")
+        .insert({
+          id: txId,
+          user_id: user!.id,
+          doctor_id: String(doctorId),
+          amount: fee,
+          department_id: doctor.department_id
+        });
+
       setTransactionId(txId);
       loadData(); // Reload to update balance and last transaction
 

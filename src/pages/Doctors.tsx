@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import verifiedBadge from "@/assets/verified-badge.png";
 
 const Doctors = () => {
   const [departments, setDepartments] = useState<any[]>([]);
@@ -58,8 +60,8 @@ const Doctors = () => {
     loadDoctors(dept.id);
   };
 
-  const handleStartChat = (doctor: any) => {
-    navigate(`/consultation?doctorId=${doctor.id}`);
+  const handleStartChat = (doctorId: string) => {
+    navigate(`/consultation?doctorId=${doctorId}`);
   };
 
 
@@ -113,106 +115,89 @@ const Doctors = () => {
         </p>
 
         {doctors.filter(d => d.is_verified).length > 0 && (
-          <>
-            <h2 className="text-2xl font-bold text-center mb-4 text-primary">✨ أبرز الأطباء الموثقين</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <img src={verifiedBadge} alt="" className="w-6 h-6" />
+              الأطباء الموثقون
+            </h3>
+            <div className="space-y-4">
               {doctors.filter(d => d.is_verified).map((doctor) => (
-                <Card key={doctor.id} className="shadow-strong animate-fade-in hover:shadow-glow transition-all border-2 border-primary/30">
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col items-center text-center gap-3">
-                      <div className="relative">
-                        {doctor.image_url ? (
-                          <img 
-                            src={doctor.image_url} 
-                            alt={doctor.doctor_name}
-                            className="w-24 h-24 rounded-full object-cover border-4 border-primary"
-                          />
-                        ) : (
-                          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-primary">
-                            {doctor.doctor_name?.charAt(0) || 'د'}
-                          </div>
-                        )}
-                        <div className="absolute -top-1 -right-1">
-                          <img src="/src/assets/verified-badge.png" alt="موثق" className="w-8 h-8" />
-                        </div>
+                <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
+                  <div className="flex items-center gap-4 p-4">
+                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-primary shadow-lg">
+                      <AvatarImage src={doctor.image_url} className="object-cover" />
+                      <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary-light text-white">
+                        {doctor.doctor_name?.charAt(0) || 'د'}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold truncate">{doctor.doctor_name}</h3>
+                        <img src={verifiedBadge} alt="Verified" className="w-5 h-5 flex-shrink-0" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{doctor.doctor_name}</CardTitle>
-                        <CardDescription className="text-sm mt-1">{doctor.specialization_ar}</CardDescription>
-                        {doctor.phone_number && (
-                          <p className="text-xs text-muted-foreground mt-1">📱 {doctor.phone_number}</p>
-                        )}
+                      <p className="text-sm text-muted-foreground mb-2">{doctor.specialization_ar}</p>
+                      {doctor.bio_ar && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <Button 
+                          onClick={() => handleStartChat(doctor.id)}
+                          className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"
+                          size="sm"
+                        >
+                          ابدأ الاستشارة
+                        </Button>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {doctor.bio_ar && (
-                      <p className="text-sm text-muted-foreground text-center line-clamp-2">{doctor.bio_ar}</p>
-                    )}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xl font-bold text-primary">{doctor.consultation_fee || doctor.price} جنيه</span>
-                      <Button 
-                        className="bg-gradient-to-r from-primary to-primary-light"
-                        onClick={() => handleStartChat(doctor)}
-                      >
-                        بدء الاستشارة
-                      </Button>
-                    </div>
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
-          </>
+          </div>
         )}
 
         {doctors.filter(d => !d.is_verified).length > 0 && (
-          <>
-            <h2 className="text-2xl font-bold text-center mb-4">الأطباء المتاحون</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="text-lg font-bold mb-4">الأطباء المتاحون</h3>
+            <div className="space-y-4">
               {doctors.filter(d => !d.is_verified).map((doctor) => (
-                <Card key={doctor.id} className="shadow-medium animate-fade-in hover:shadow-strong transition-all">
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col items-center text-center gap-3">
-                      <div className="relative">
-                        {doctor.image_url ? (
-                          <img 
-                            src={doctor.image_url} 
-                            alt={doctor.doctor_name}
-                            className="w-20 h-20 rounded-full object-cover border-4 border-primary/20"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-primary/20">
-                            {doctor.doctor_name?.charAt(0) || 'د'}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{doctor.doctor_name}</CardTitle>
-                        <CardDescription className="text-sm mt-1">{doctor.specialization_ar}</CardDescription>
-                        {doctor.phone_number && (
-                          <p className="text-xs text-muted-foreground mt-1">📱 {doctor.phone_number}</p>
-                        )}
+                <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
+                  <div className="flex items-center gap-4 p-4">
+                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-gray-300 shadow-lg">
+                      <AvatarImage src={doctor.image_url} className="object-cover" />
+                      <AvatarFallback className="text-2xl bg-gradient-to-br from-gray-400 to-gray-500 text-white">
+                        {doctor.doctor_name?.charAt(0) || 'د'}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold mb-1 truncate">{doctor.doctor_name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">{doctor.specialization_ar}</p>
+                      {doctor.bio_ar && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <Button 
+                          onClick={() => handleStartChat(doctor.id)}
+                          className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"
+                          size="sm"
+                        >
+                          ابدأ الاستشارة
+                        </Button>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {doctor.bio_ar && (
-                      <p className="text-sm text-muted-foreground text-center line-clamp-2">{doctor.bio_ar}</p>
-                    )}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xl font-bold text-primary">{doctor.consultation_fee || doctor.price} جنيه</span>
-                      <Button 
-                        className="bg-gradient-to-r from-primary to-primary-light"
-                        onClick={() => handleStartChat(doctor)}
-                      >
-                        بدء الاستشارة
-                      </Button>
-                    </div>
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
-          </>
+          </div>
+        )}
+
+        {doctors.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">لا يوجد أطباء في هذا القسم حالياً</p>
         )}
       </div>
       <BottomNav />

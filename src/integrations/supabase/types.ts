@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      consultations: {
+        Row: {
+          amount: number
+          created_at: string
+          department_id: string | null
+          doctor_id: string
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          department_id?: string | null
+          doctor_id: string
+          id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          department_id?: string | null
+          doctor_id?: string
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "medical_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deposit_requests: {
         Row: {
           admin_notes: string | null
@@ -57,6 +102,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      doctor_requests: {
+        Row: {
+          admin_notes: string | null
+          certificate_url: string
+          created_at: string
+          full_name: string
+          id: string
+          id_card_back_url: string
+          id_card_front_url: string
+          phone: string
+          specialization: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          certificate_url: string
+          created_at?: string
+          full_name: string
+          id?: string
+          id_card_back_url: string
+          id_card_front_url: string
+          phone: string
+          specialization: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          certificate_url?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          id_card_back_url?: string
+          id_card_front_url?: string
+          phone?: string
+          specialization?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       doctors: {
         Row: {
@@ -353,10 +443,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: { _role: string; _user_id: string }
-        Returns: boolean
-      }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
       request_status: "pending" | "approved" | "rejected"

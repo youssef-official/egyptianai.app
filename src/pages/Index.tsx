@@ -3,16 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Stethoscope, Wallet, LogOut, Bot } from "lucide-react";
+import { Stethoscope, Wallet, LogOut, Bot, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FeaturedDoctors from "@/components/FeaturedDoctors";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [recentConsultations, setRecentConsultations] = useState<any[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -54,8 +57,16 @@ const Index = () => {
       .eq("user_id", userId)
       .single();
 
+    const { data: consultationsData } = await supabase
+      .from("consultations")
+      .select("*, doctors(doctor_name, image_url, specialization_ar), medical_departments(name_ar)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
     setProfile(profileData);
     setWallet(walletData);
+    setRecentConsultations(consultationsData || []);
   };
 
   const handleLogout = async () => {
@@ -131,6 +142,46 @@ const Index = () => {
         </Card>
 
         <FeaturedDoctors />
+
+        {/* Recent Consultations */}
+        {recentConsultations.length > 0 && (
+          <Card className="mb-6 shadow-medium rounded-3xl border-0">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold">آخر الاستشارات</h2>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentConsultations.map((consultation) => (
+                <div key={consultation.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/5 to-primary-light/5 rounded-2xl hover:shadow-medium transition-all">
+                  <Avatar className="w-12 h-12 border-2 border-primary/20">
+                    <AvatarImage src={consultation.doctors?.image_url} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                      {consultation.doctors?.doctor_name?.charAt(0) || 'د'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold truncate">{consultation.doctors?.doctor_name}</p>
+                      <Badge variant="secondary" className="text-xs">{consultation.medical_departments?.name_ar}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{consultation.doctors?.specialization_ar}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(consultation.created_at).toLocaleDateString('ar-EG')}
+                      </span>
+                      <span className="text-xs font-mono text-primary">#{consultation.id}</span>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-primary">{consultation.amount} ج</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
