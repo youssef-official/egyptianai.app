@@ -332,11 +332,11 @@ const Profile = () => {
                 هل تحتاج إلى مساعدة؟ فريق الدعم متاح لمساعدتك
               </p>
               <a
-                href="mailto:youssef.official.2411@gmail.com"
+                href="mailto:admin@egyptianai.app"
                 className="flex items-center justify-center gap-2 p-3 bg-secondary hover:bg-secondary/80 rounded-full transition-all"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">youssef.official.2411@gmail.com</span>
+                <span className="text-sm font-medium">admin@egyptianai.app</span>
               </a>
             </div>
           </CardContent>
