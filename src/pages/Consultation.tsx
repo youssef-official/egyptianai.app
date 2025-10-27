@@ -54,15 +54,16 @@ const Consultation = () => {
       setWallet(walletData);
 
       // Load last transaction
-      const { data: lastTx } = await supabase
+      const { data: transactionData } = await supabase
         .from("transactions")
         .select("*")
         .eq("user_id", currentUser.id)
-        .eq("doctor_id", String(doctorId))
+        .eq("doctor_id", doctorId)
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle();
-      setLastTransaction(lastTx);
+        .single();
+      setLastTransaction(transactionData);
+
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -70,51 +71,101 @@ const Consultation = () => {
     }
   };
 
-  const handleStartConsultation = async () => {
+  const startConsultation = async () => {
     if (!doctor || !wallet) return;
 
-    setProcessing(true);
-    try {
-      const { data, error } = await supabase.rpc('perform_consultation', { _doctor_id: doctorId });
-      if (error) throw error;
-      const txId = data?.[0]?.tx_id || '';
-      setTransactionId(txId);
-      await loadData();
-      toast({ title: "تم بدء الاستشارة!", description: `معرف العملية: ${txId}` });
-    } catch (error: any) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleReport = async () => {
-    if (!reportText.trim()) {
+    if (wallet.balance < doctor.consultation_fee) {
       toast({
-        title: "خطأ",
-        description: "يرجى كتابة سبب التبليغ",
+        title: "رصيد غير كافي",
+        description: "يجب إضافة رصيد إلى محفظتك أولاً",
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) throw new Error('غير مسجل الدخول');
+    setProcessing(true);
 
-      await supabase.from('doctor_reports').insert({
-        reporter_id: currentUser.id,
-        doctor_id: doctor.id,
-        message: reportText.trim(),
+    try {
+      // Create transaction
+      const { data: transactionData, error: transactionError } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          doctor_id: doctor.id,
+          amount: doctor.consultation_fee,
+          type: "consultation",
+          status: "completed",
+        })
+        .select()
+        .single();
+
+      if (transactionError) throw transactionError;
+
+      // Update wallet balance
+      const { error: walletError } = await supabase
+        .from("wallets")
+        .update({
+          balance: wallet.balance - doctor.consultation_fee,
+        })
+        .eq("user_id", user.id);
+
+      if (walletError) throw walletError;
+
+      // Update doctor's earnings
+      const { error: earningsError } = await supabase
+        .from("wallets")
+        .update({
+          balance: (doctor.wallet?.balance || 0) + (doctor.consultation_fee * 0.9), // 10% commission
+        })
+        .eq("user_id", doctor.id);
+
+      if (earningsError) throw earningsError;
+
+      setTransactionId(transactionData.id);
+      setWallet(prev => ({ ...prev, balance: prev.balance - doctor.consultation_fee }));
+
+      toast({
+        title: "تم بدء الاستشارة بنجاح!",
+        description: "يمكنك الآن التواصل مع الطبيب",
       });
+
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const reportDoctor = async () => {
+    if (!reportText.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("doctor_reports")
+        .insert({
+          doctor_id: doctor.id,
+          user_id: user.id,
+          report_text: reportText,
+        });
+
+      if (error) throw error;
 
       toast({
         title: "تم إرسال التبليغ",
-        description: "شكراً لك، سيتم مراجعة التبليغ قريباً",
+        description: "سيتم مراجعة التبليغ من قبل فريق الدعم",
       });
+
       setReportText("");
     } catch (error: any) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -128,8 +179,8 @@ const Consultation = () => {
 
   if (!doctor) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 text-center">
-        <div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
           <p>لم يتم العثور على الطبيب</p>
           <Button onClick={() => navigate("/doctors")} className="mt-4">
             العودة للأطباء
@@ -140,152 +191,166 @@ const Consultation = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10">
-      <div className="w-full">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-28">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Header */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/doctors")} className="gap-2">
+          <Button variant="ghost" onClick={() => navigate("/doctors")} className="gap-2 mb-4 hover-lift">
             <ArrowRight className="w-4 h-4" />
             العودة للأطباء
           </Button>
         </div>
 
-        {lastTransaction && (
-          <Alert className="mx-4 md:mx-6 mb-6 bg-blue-50 border-blue-200">
-            <AlertDescription className="text-blue-900">
-              آخر استشارة كانت في: {new Date(lastTransaction.created_at).toLocaleString("ar-EG")}
-              <br />
-              معرف العملية: {lastTransaction.id}
+        {/* Success Alert */}
+        {transactionId && (
+          <Alert className="mb-6 border-green-200 bg-green-50 animate-fade-in">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <p className="font-semibold">تم بدء الاستشارة بنجاح!</p>
+              <p>معرف العملية: {transactionId}</p>
+              <p>يمكنك التواصل مع الطبيب عبر الواتساب:</p>
+              <div className="mt-3">
+                <a
+                  href={`https://wa.me/${doctor.whatsapp_number}?text=مرحباً، أنا ${user?.email || ''}، معرف العملية: ${transactionId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-2xl hover:bg-green-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  فتح الواتساب
+                </a>
+              </div>
             </AlertDescription>
           </Alert>
         )}
 
-        <section className="w-full bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
-            <div className="flex items-start gap-5 md:gap-6">
-              <Avatar className="w-28 h-28 md:w-32 md:h-32 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden flex-shrink-0">
+        {/* Doctor Profile */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-light to-primary/80 text-white mb-8 shadow-strong animate-fade-in">
+          <div className="absolute inset-0 bg-black/10" />
+          <div className="relative p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <Avatar className="w-28 h-28 md:w-32 md:h-32 rounded-3xl ring-4 ring-white/60 shadow-glow overflow-hidden flex-shrink-0">
                 <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" />
-                <AvatarFallback className="text-2xl bg-white text-primary">
+                <AvatarFallback className="text-2xl bg-white/20 text-white">
                   {doctor.doctor_name?.charAt(0) || "د"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+
+              <div className="flex-1 text-center md:text-right">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{doctor.doctor_name}</h1>
                   {doctor.is_verified && (
-                    <Badge className="bg-white text-primary">
+                    <Badge className="bg-white/20 text-white border-white/30">
                       <CheckCircle2 className="w-3 h-3 ml-1" />
                       موثق
                     </Badge>
                   )}
                 </div>
                 <p className="text-white/90 text-base md:text-lg">{doctor.specialization_ar}</p>
-                <div className="flex items-center gap-4 mt-4 text-xs md:text-sm flex-wrap">
-                  {doctor.phone_number && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {doctor.phone_number}
-                    </div>
-                  )}
-                  {doctor.address && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {doctor.address}
-                    </div>
-                  )}
+                
+                <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-center md:justify-start">
+                  <div className="flex items-center gap-2 bg-white/20 rounded-2xl px-4 py-2">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-sm">{doctor.phone_number}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/20 rounded-2xl px-4 py-2">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">{doctor.location || "مصر"}</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
         </section>
 
-        <div className="p-4 md:p-6 space-y-6">
-            <div>
-              <h3 className="font-semibold text-lg mb-2">نبذة عن الطبيب</h3>
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Doctor Info */}
+          <div className="md:col-span-2 space-y-6">
+            <div className="bg-card rounded-3xl p-6 shadow-medium animate-slide-in-up">
+              <h3 className="font-bold text-xl mb-4">نبذة عن الطبيب</h3>
               <p className="text-muted-foreground leading-7">{doctor.bio_ar || "لا توجد معلومات إضافية"}</p>
             </div>
 
-              <div className="bg-secondary p-5 rounded-xl">
-                <div className="flex justify-between items-center mb-2">
+            {/* Consultation Details */}
+            <div className="bg-card rounded-3xl p-6 shadow-medium animate-slide-in-up">
+              <h3 className="font-bold text-xl mb-4">تفاصيل الاستشارة</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-muted-foreground">سعر الاستشارة</span>
-                  <span className="text-3xl font-extrabold text-primary">
-                    {doctor.consultation_fee || doctor.price} جنيه
+                  <span className="font-bold text-2xl text-primary">
+                    {doctor.consultation_fee} جنيه
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center py-3">
                   <span className="text-muted-foreground">رصيدك الحالي</span>
                   <span className="font-semibold">{wallet?.balance?.toFixed(2)} جنيه</span>
                 </div>
               </div>
+            </div>
+          </div>
 
-            {transactionId && (
-              <Alert className="bg-green-50 border-green-200">
-                <AlertDescription className="text-green-900">
-                  <div className="space-y-2">
-                    <p className="font-semibold">تم بدء الاستشارة بنجاح!</p>
-                    <p>معرف العملية: {transactionId}</p>
-                    <p>يمكنك التواصل مع الطبيب عبر الواتساب:</p>
-                    <a 
-                      href={`https://wa.me/${doctor.whatsapp_number}?text=مرحباً، أنا ${user?.email || ''}، معرف العملية: ${transactionId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          {/* Action Panel */}
+          <div className="space-y-6">
+            {!transactionId && (
+              <div className="bg-card rounded-3xl p-6 shadow-medium animate-slide-in-up">
+                <h3 className="font-bold text-lg mb-4">بدء الاستشارة</h3>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-2xl h-12 text-lg font-bold hover-scale"
+                      disabled={processing || (wallet?.balance || 0) < doctor.consultation_fee}
                     >
-                      <MessageCircle className="w-4 h-4" />
-                      فتح الواتساب
-                    </a>
-                  </div>
-                </AlertDescription>
-              </Alert>
+                      {processing ? "جاري المعالجة..." : "بدء الاستشارة"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-3xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>تأكيد بدء الاستشارة</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        هل أنت متأكد من بدء الاستشارة مع الدكتور {doctor.doctor_name}؟
+                        <br />
+                        سيتم خصم {doctor.consultation_fee} جنيه من محفظتك.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                      <AlertDialogAction onClick={startConsultation} className="bg-primary hover:bg-primary/90">
+                        تأكيد
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             )}
 
-            <div className="flex gap-3">
+            {/* Report Doctor */}
+            <div className="bg-card rounded-3xl p-6 shadow-medium animate-slide-in-up">
+              <h3 className="font-bold text-lg mb-4">تبليغ عن الطبيب</h3>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    className="flex-1 bg-gradient-to-r from-primary to-primary-light text-lg h-12"
-                    disabled={processing || !!transactionId}
-                  >
-                    {processing ? "جاري المعالجة..." : transactionId ? "تم بدء الاستشارة" : "بدء الاستشارة"}
+                  <Button variant="outline" className="w-full rounded-2xl h-12 hover-lift">
+                    <Flag className="w-5 h-5 ml-2" />
+                    تبليغ
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد بدء الاستشارة</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      هل أنت متأكد من بدء الاستشارة مع {doctor.doctor_name}؟
-                      <br />
-                      سيتم خصم {doctor.consultation_fee || doctor.price} جنيه من رصيدك.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleStartConsultation}>
-                      تأكيد
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-12 w-12">
-                    <Flag className="w-5 h-5" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-3xl">
                   <AlertDialogHeader>
                     <AlertDialogTitle>تبليغ عن الطبيب</AlertDialogTitle>
                     <AlertDialogDescription>
-                      يرجى كتابة سبب التبليغ
+                      اكتب سبب التبليغ وسيتم مراجعته من قبل فريق الدعم.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <Textarea
-                    value={reportText}
-                    onChange={(e) => setReportText(e.target.value)}
-                    placeholder="اكتب سبب التبليغ هنا..."
-                    className="min-h-[100px]"
-                  />
+                  <div className="py-4">
+                    <Textarea
+                      placeholder="اكتب سبب التبليغ هنا..."
+                      value={reportText}
+                      onChange={(e) => setReportText(e.target.value)}
+                      className="rounded-2xl min-h-[100px]"
+                    />
+                  </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleReport}>
+                    <AlertDialogAction onClick={reportDoctor} className="bg-destructive hover:bg-destructive/90">
                       إرسال التبليغ
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -293,9 +358,10 @@ const Consultation = () => {
               </AlertDialog>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">ملاحظات هامة:</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+            {/* Important Notes */}
+            <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 animate-slide-in-up">
+              <h4 className="font-bold text-blue-900 mb-3">ملاحظات هامة:</h4>
+              <ul className="text-sm text-blue-800 space-y-2">
                 <li>• بعد بدء الاستشارة، ستحصل على معرف عملية فريد</li>
                 <li>• استخدم معرف العملية عند التواصل مع الطبيب</li>
                 <li>• لا يمكن إلغاء الاستشارة بعد بدءها</li>

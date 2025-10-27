@@ -75,51 +75,51 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-28">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong">
-              <Stethoscope className="w-7 h-7 text-white" />
+        <div className="flex items-center justify-between mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong hover-scale">
+              <Stethoscope className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
-              <p className="text-xs text-muted-foreground">منصة الاستشارات الطبية</p>
+              <h1 className="text-2xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
+              <p className="text-sm text-muted-foreground">Cura Verse - منصة الرعاية الصحية</p>
             </div>
           </div>
           <Button 
             variant="ghost" 
             onClick={handleLogout} 
-            className="gap-2 rounded-full h-10 w-10 p-0"
+            className="gap-2 rounded-2xl h-12 w-12 p-0 hover-lift"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5" />
           </Button>
         </div>
 
         {/* Wallet Summary */}
-        <Card className="mb-6 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4">
-            <div className="flex items-center gap-2 text-base">
-              <WalletIcon className="w-5 h-5" />
+        <Card className="mb-8 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0 hover-lift">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-6">
+            <div className="flex items-center gap-3 text-lg font-semibold">
+              <WalletIcon className="w-6 h-6" />
               محفظتي
             </div>
           </CardHeader>
-          <CardContent className="pt-6 pb-6">
-            <div className="text-center space-y-4">
-              <div className="text-3xl font-bold text-primary">
-                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-lg">جنيه</span>
+          <CardContent className="pt-8 pb-8">
+            <div className="text-center space-y-6">
+              <div className="text-4xl font-bold text-primary">
+                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-xl text-muted-foreground">جنيه</span>
               </div>
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-4 justify-center">
                 <Button 
-                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-10 px-6"
+                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-2xl h-12 px-8 font-semibold"
                   onClick={() => navigate("/transfer")}
                 >
                   تحويل
                 </Button>
                 <Button 
                   variant="outline"
-                  className="rounded-full h-10 px-6"
+                  className="rounded-2xl h-12 px-8 font-semibold border-2"
                   onClick={() => navigate("/wallet")}
                 >
                   فتح المحفظة
@@ -130,33 +130,35 @@ const Index = () => {
         </Card>
 
         {/* Main Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           {/* تحدث مع دكتور حقيقي */}
           <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            className="cursor-pointer hover:shadow-strong transition-all hover-scale animate-fade-in rounded-3xl border-0 shadow-medium hover-lift"
             onClick={() => navigate("/doctors")}
           >
-            <CardHeader className="p-5">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Stethoscope className="w-7 h-7 text-primary" />
+            <CardHeader className="p-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center hover-scale">
+                  <Stethoscope className="w-8 h-8 text-primary" />
                 </div>
-                <div className="text-sm font-semibold">تحدث مع دكتور حقيقي</div>
+                <div className="text-base font-bold text-foreground">تحدث مع دكتور حقيقي</div>
+                <div className="text-xs text-muted-foreground">استشارة طبية مباشرة</div>
               </div>
             </CardHeader>
           </Card>
 
           {/* تحدث مع الذكاء الاصطناعي */}
           <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            className="cursor-pointer hover:shadow-strong transition-all hover-scale animate-fade-in rounded-3xl border-0 shadow-medium hover-lift"
             onClick={() => navigate("/ai-chat")}
           >
-            <CardHeader className="p-5">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Bot className="w-7 h-7 text-primary" />
+            <CardHeader className="p-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center hover-scale">
+                  <Bot className="w-8 h-8 text-primary" />
                 </div>
-                <div className="text-sm font-semibold">تحدث مع الذكاء الاصطناعي</div>
+                <div className="text-base font-bold text-foreground">تحدث مع الذكاء الاصطناعي</div>
+                <div className="text-xs text-muted-foreground">استشارة فورية 24/7</div>
               </div>
             </CardHeader>
           </Card>

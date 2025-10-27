@@ -109,23 +109,23 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary-light to-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-strong animate-fade-in rounded-3xl border-0">
+      <Card className="w-full max-w-md shadow-strong animate-scale-in rounded-3xl border-0 hover-lift">
         <CardHeader className="space-y-1 text-center pb-8">
-          <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-glow animate-pulse-glow">
-            <Stethoscope className="w-12 h-12 text-white" />
+          <div className="w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-glow animate-pulse-glow">
+            <Stethoscope className="w-14 h-14 text-white" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-            Ai | Egyptian Doctor
+          <CardTitle className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+            Cura Verse
           </CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription className="text-lg text-muted-foreground">
             {isLogin ? "سجل دخولك للمتابعة" : "أنشئ حساباً جديداً"}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold">
                 <Mail className="w-4 h-4" />
                 البريد الإلكتروني
               </Label>
@@ -135,13 +135,13 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="text-right rounded-2xl transition-all"
+                className="text-right rounded-2xl transition-all h-12 border-2 focus:border-primary"
                 placeholder="example@email.com"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
+            <div className="space-y-3">
+              <Label htmlFor="password" className="flex items-center gap-2 text-sm font-semibold">
                 <Lock className="w-4 h-4" />
                 كلمة المرور
               </Label>
@@ -151,7 +151,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="text-right rounded-2xl transition-all"
+                className="text-right rounded-2xl transition-all h-12 border-2 focus:border-primary"
                 minLength={6}
               />
             </div>
@@ -227,11 +227,11 @@ const Auth = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-glow transition-all rounded-full h-11 text-base font-semibold" 
+              className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-glow transition-all rounded-2xl h-14 text-lg font-bold hover-scale" 
               disabled={loading}
             >
               {loading ? (
-                <span className="inline-block w-5 h-5 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
+                <span className="inline-block w-6 h-6 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
               ) : (
                 isLogin ? "تسجيل الدخول" : "إنشاء حساب"
               )}
@@ -249,7 +249,7 @@ const Auth = () => {
             <Button
               type="button"
               variant="outline"
-              className="w-full rounded-full h-11 border-2"
+              className="w-full rounded-2xl h-14 border-2 font-semibold hover-lift"
               onClick={handleGoogleAuth}
             >
               <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@ const Auth = () => {
             <Button
               type="button"
               variant="link"
-              className="w-full"
+              className="w-full text-primary hover:text-primary/80 font-semibold"
               onClick={() => {
                 setIsLogin(!isLogin);
                 if (isLogin) {

@@ -8,107 +8,107 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Medical Sky Blue Theme */
-    --background: 200 100% 98%;
-    --foreground: 210 20% 15%;
+    /* Modern Healthcare Theme - iPhone inspired */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 15%;
+    --card-foreground: 0 0% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 15%;
+    --popover-foreground: 0 0% 3.9%;
 
-    /* Sky Blue Primary */
-    --primary: 199 89% 48%;
+    /* Modern Blue Primary - iOS inspired */
+    --primary: 214 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 199 89% 65%;
-    --primary-glow: 199 89% 80%;
+    --primary-light: 214 100% 65%;
+    --primary-glow: 214 100% 80%;
 
-    /* Soft Gray Secondary */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 210 20% 15%;
+    /* Clean Gray Secondary */
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 210 15% 50%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
-    --accent: 199 89% 48%;
+    --accent: 214 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 98%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 0 0% 98%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 199 89% 48%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 214 100% 50%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 48%), hsl(199 89% 65%));
-    --gradient-soft: linear-gradient(180deg, hsl(0 0% 100%), hsl(200 100% 98%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(199 89% 98%));
+    /* Modern Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(214 100% 50%), hsl(214 100% 65%));
+    --gradient-soft: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(214 100% 98%));
 
-    /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(199 89% 48% / 0.08);
-    --shadow-medium: 0 4px 16px hsl(199 89% 48% / 0.12);
-    --shadow-strong: 0 8px 24px hsl(199 89% 48% / 0.16);
-    --shadow-glow: 0 0 32px hsl(199 89% 65% / 0.3);
+    /* iOS-style Shadows */
+    --shadow-soft: 0 1px 3px hsl(0 0% 0% / 0.1);
+    --shadow-medium: 0 4px 12px hsl(0 0% 0% / 0.15);
+    --shadow-strong: 0 8px 25px hsl(0 0% 0% / 0.2);
+    --shadow-glow: 0 0 20px hsl(214 100% 50% / 0.3);
 
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Smooth Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .dark {
-    --background: 220 25% 8%;
-    --foreground: 0 0% 95%;
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 199 89% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 199 89% 70%;
-    --primary-glow: 199 89% 80%;
+    --primary: 214 100% 60%;
+    --primary-foreground: 0 0% 9%;
+    --primary-light: 214 100% 75%;
+    --primary-glow: 214 100% 85%;
 
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 20% 18%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
 
-    --accent: 199 89% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 214 100% 60%;
+    --accent-foreground: 0 0% 9%;
 
     --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 98%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 0 0% 9%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 199 89% 55%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 214 100% 60%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 55%), hsl(199 89% 70%));
-    --gradient-soft: linear-gradient(180deg, hsl(220 25% 12%), hsl(220 25% 8%));
-    --gradient-card: linear-gradient(145deg, hsl(220 25% 12%), hsl(220 25% 10%));
+    --gradient-primary: linear-gradient(135deg, hsl(214 100% 60%), hsl(214 100% 75%));
+    --gradient-soft: linear-gradient(180deg, hsl(0 0% 3.9%), hsl(0 0% 2%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 3.9%), hsl(0 0% 5%));
 
-    --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.2);
-    --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.3);
-    --shadow-strong: 0 8px 24px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 32px hsl(199 89% 55% / 0.4);
+    --shadow-soft: 0 1px 3px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 12px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 8px 25px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 20px hsl(214 100% 60% / 0.4);
   }
 }
 
@@ -119,10 +119,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     direction: rtl;
+    font-feature-settings: 'kern' 1;
+    text-rendering: optimizeLegibility;
   }
 
   /* iOS safe area support */
@@ -136,11 +138,11 @@ All colors MUST be HSL.
   }
 }
 
-/* Custom animations */
+/* Modern iOS-style animations */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -151,7 +153,7 @@ All colors MUST be HSL.
 @keyframes slide-in-right {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-16px);
   }
   to {
     opacity: 1;
@@ -159,23 +161,83 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
   }
   50% {
-    box-shadow: 0 0 40px hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
   }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease-out;
+  animation: fade-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.5s ease-out;
+  animation: slide-in-right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* iOS-style hover effects */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
 }
