@@ -164,7 +164,7 @@ const Consultation = () => {
           <div className="bg-gradient-to-br from-primary to-primary-light p-6 text-white">
             <div className="flex items-start gap-4">
               <Avatar className="w-24 h-24 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden">
-                <AvatarImage src={doctor.image_url} className="object-cover" />
+                <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" />
                 <AvatarFallback className="text-2xl bg-white text-primary">
                   {doctor.doctor_name?.charAt(0) || "د"}
                 </AvatarFallback>
