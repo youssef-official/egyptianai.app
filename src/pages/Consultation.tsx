@@ -161,9 +161,9 @@ const Consultation = () => {
         )}
 
         <Card className="shadow-strong rounded-3xl overflow-hidden border-0">
-          <div className="bg-gradient-to-br from-primary to-primary-light p-6 text-white">
-            <div className="flex items-start gap-4">
-              <Avatar className="w-24 h-24 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden">
+          <div className="bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
+            <div className="flex items-start gap-5 md:gap-6">
+              <Avatar className="w-28 h-28 md:w-32 md:h-32 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden flex-shrink-0">
                 <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" />
                 <AvatarFallback className="text-2xl bg-white text-primary">
                   {doctor.doctor_name?.charAt(0) || "د"}
@@ -171,7 +171,7 @@ const Consultation = () => {
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-2xl font-extrabold tracking-tight">{doctor.doctor_name}</h1>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{doctor.doctor_name}</h1>
                   {doctor.is_verified && (
                     <Badge className="bg-white text-primary">
                       <CheckCircle2 className="w-3 h-3 ml-1" />
@@ -179,8 +179,8 @@ const Consultation = () => {
                     </Badge>
                   )}
                 </div>
-                <p className="text-white/90 text-sm md:text-base">{doctor.specialization_ar}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs md:text-sm flex-wrap">
+                <p className="text-white/90 text-base md:text-lg">{doctor.specialization_ar}</p>
+                <div className="flex items-center gap-4 mt-4 text-xs md:text-sm flex-wrap">
                   {doctor.phone_number && (
                     <div className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
@@ -204,10 +204,10 @@ const Consultation = () => {
               <p className="text-muted-foreground leading-7">{doctor.bio_ar || "لا توجد معلومات إضافية"}</p>
             </div>
 
-              <div className="bg-secondary p-4 rounded-xl">
+              <div className="bg-secondary p-5 rounded-xl">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-muted-foreground">سعر الاستشارة</span>
-                  <span className="text-2xl font-extrabold text-primary">
+                  <span className="text-3xl font-extrabold text-primary">
                     {doctor.consultation_fee || doctor.price} جنيه
                   </span>
                 </div>
