@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+// Full-page layout (no Card wrapper)
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,20 +129,20 @@ const Consultation = () => {
 
   if (!doctor) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 text-center">
+        <div>
           <p>لم يتم العثور على الطبيب</p>
           <Button onClick={() => navigate("/doctors")} className="mt-4">
             العودة للأطباء
           </Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
-      <div className="container mx-auto max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10">
+      <div className="w-full">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate("/doctors")} className="gap-2">
             <ArrowRight className="w-4 h-4" />
@@ -151,7 +151,7 @@ const Consultation = () => {
         </div>
 
         {lastTransaction && (
-          <Alert className="mb-6 bg-blue-50 border-blue-200">
+          <Alert className="mx-4 md:mx-6 mb-6 bg-blue-50 border-blue-200">
             <AlertDescription className="text-blue-900">
               آخر استشارة كانت في: {new Date(lastTransaction.created_at).toLocaleString("ar-EG")}
               <br />
@@ -160,8 +160,8 @@ const Consultation = () => {
           </Alert>
         )}
 
-        <Card className="shadow-strong rounded-3xl overflow-hidden border-0">
-          <div className="bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
+        {/* Full-width hero header */}
+        <section className="w-full bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
             <div className="flex items-start gap-5 md:gap-6">
               <Avatar className="w-28 h-28 md:w-32 md:h-32 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden flex-shrink-0">
                 <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" />
@@ -196,9 +196,10 @@ const Consultation = () => {
                 </div>
               </div>
             </div>
-          </div>
+        </section>
 
-          <div className="p-6 space-y-6">
+        {/* Content sections */}
+        <div className="p-4 md:p-6 space-y-6">
             <div>
               <h3 className="font-semibold text-lg mb-2">نبذة عن الطبيب</h3>
               <p className="text-muted-foreground leading-7">{doctor.bio_ar || "لا توجد معلومات إضافية"}</p>
@@ -309,7 +310,7 @@ const Consultation = () => {
               <p>للدعم الفني: youssef.official.2411@gmail.com</p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
