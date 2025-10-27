@@ -441,7 +441,7 @@ const DoctorDashboard = () => {
                       طلب سحب
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="text-right">
+                  <DialogContent className="text-right" aria-describedby={undefined}>
                     <DialogHeader>
                       <DialogTitle>طلب سحب رصيد</DialogTitle>
                       <DialogDescription>

@@ -734,12 +734,32 @@ const AdminDashboard = () => {
                         عرض إثبات الدفع
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl" aria-describedby={undefined}>
                       <DialogHeader>
                         <DialogTitle>إثبات الدفع</DialogTitle>
                       </DialogHeader>
                       {selectedImage && (
                         <img src={selectedImage} alt="Proof" className="w-full rounded-lg" />
+                      )}
+                      {req.status !== 'pending' && req.proof_image_url && (
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="rounded-full"
+                            onClick={async () => {
+                              try {
+                                const path: string = req.proof_image_url;
+                                await supabase.storage.from('deposit-proofs').remove([path]);
+                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                              } catch (e: any) {
+                                toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            حذف الإثبات
+                          </Button>
+                        </div>
                       )}
                     </DialogContent>
                   </Dialog>
@@ -771,6 +791,23 @@ const AdminDashboard = () => {
                           <XCircle className="w-4 h-4 mr-2" />
                           رفض
                         </Button>
+                        {req.status !== 'pending' && req.proof_image_url && (
+                          <Button
+                            onClick={async () => {
+                              try {
+                                await supabase.storage.from('deposit-proofs').remove([req.proof_image_url]);
+                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                              } catch (e: any) {
+                                toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+                              }
+                            }}
+                            variant="outline"
+                            className="rounded-full"
+                            size="sm"
+                          >
+                            حذف الإثبات
+                          </Button>
+                        )}
                       </div>
                     </>
                   )}

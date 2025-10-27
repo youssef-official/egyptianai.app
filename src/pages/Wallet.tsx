@@ -277,7 +277,7 @@ const Wallet = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="proof">إثبات الدفع (صورة)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors" aria-describedby={undefined}>
                   <Input
                     id="proof"
                     type="file"
