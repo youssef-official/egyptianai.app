@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowRight, Upload, Wallet as WalletIcon, Copy, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -33,6 +34,7 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
+  const [showDeposit, setShowDeposit] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -207,9 +209,12 @@ const Wallet = () => {
     }
   };
 
-  const scrollToDeposit = () => {
-    const el = document.getElementById('deposit-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const handleDepositClick = () => {
+    setShowDeposit(true);
+    requestAnimationFrame(() => {
+      const el = document.getElementById('deposit-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   return (
@@ -248,7 +253,7 @@ const Wallet = () => {
                 <Button onClick={() => navigate('/transfer')} className="rounded-2xl h-11">
                   تحويل
                 </Button>
-                <Button onClick={scrollToDeposit} variant="outline" className="rounded-2xl h-11">
+                <Button onClick={handleDepositClick} variant="outline" className="rounded-2xl h-11">
                   إيداع
                 </Button>
               </div>
@@ -271,6 +276,7 @@ const Wallet = () => {
             </Alert>
           ))}
 
+        {showDeposit && (
         <Card id="deposit-section" className="shadow-strong animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
             <CardTitle className="flex items-center gap-2">
@@ -398,72 +404,90 @@ const Wallet = () => {
             </form>
           </CardContent>
         </Card>
+        )}
 
-        {/* History */}
+        {/* History Tabs */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              تاريخ العمليات
+              السجل
             </CardTitle>
-            <CardDescription>آخر التحويلات والاستشارات المرتبطة بحسابك</CardDescription>
+            <CardDescription>كل العمليات والطلبات الأخيرة</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {transactions.map((t) => {
-                const amount = Number(t.amount);
-                let sign = '-';
-                let color = 'text-destructive';
-                if (t.type === 'transfer' && t.receiver_id === wallet?.user_id) { sign = '+'; color = 'text-green-600'; }
-                if (t.type === 'consultation' && doctor && t.doctor_id === doctor.id) { sign = '+'; color = 'text-green-600'; }
-                return (
-                  <div key={t.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{t.type === 'consultation' ? 'استشارة' : t.type === 'transfer' ? 'تحويل' : t.type}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString('ar-EG')} • ID: {t.id}</p>
-                    </div>
-                    <div className={`text-lg font-bold ${color}`}>
-                      {sign}{amount.toFixed(2)} ج
-                    </div>
+            <Tabs defaultValue="all" className="w-full">
+              <TabsList className="grid grid-cols-3 md:grid-cols-4 w-full mb-3">
+                <TabsTrigger value="all">الكل</TabsTrigger>
+                <TabsTrigger value="transfers">التحويلات</TabsTrigger>
+                <TabsTrigger value="consultations">الاستشارات</TabsTrigger>
+                {doctor && <TabsTrigger value="withdrawals">السحب</TabsTrigger>}
+              </TabsList>
+
+              <TabsContent value="all">
+                <div className="space-y-3">
+                  {transactions.map((t) => renderTxItem(t))}
+                  {transactions.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>}
+                </div>
+              </TabsContent>
+              <TabsContent value="transfers">
+                <div className="space-y-3">
+                  {transactions.filter(t => t.type === 'transfer').map((t) => renderTxItem(t))}
+                  {transactions.filter(t => t.type === 'transfer').length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد تحويلات</p>}
+                </div>
+              </TabsContent>
+              <TabsContent value="consultations">
+                <div className="space-y-3">
+                  {transactions.filter(t => t.type === 'consultation').map((t) => renderTxItem(t))}
+                  {transactions.filter(t => t.type === 'consultation').length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد استشارات</p>}
+                </div>
+              </TabsContent>
+              {doctor && (
+                <TabsContent value="withdrawals">
+                  <div className="space-y-3">
+                    {withdrawRequests.map((r) => (
+                      <div key={r.id} className="p-3 bg-secondary rounded-xl flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">الصافي: {r.net_amount} ج</p>
+                          <p className="text-xs text-muted-foreground">العمولة: {r.commission} ج • {new Date(r.created_at).toLocaleDateString('ar-EG')}</p>
+                        </div>
+                        <span className={`text-sm font-semibold ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>{r.status}</span>
+                      </div>
+                    ))}
+                    {withdrawRequests.length === 0 && (
+                      <p className="text-center text-muted-foreground py-6">لا توجد طلبات سحب</p>
+                    )}
                   </div>
-                );
-              })}
-              {transactions.length === 0 && (
-                <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>
+                </TabsContent>
               )}
-            </div>
+            </Tabs>
           </CardContent>
         </Card>
 
-        {/* Withdraw requests for doctors */}
-        {doctor && (
-          <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
-            <CardHeader>
-              <CardTitle>طلبات السحب الأخيرة</CardTitle>
-              <CardDescription>متابعة حالة طلبات السحب الخاصة بك</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {withdrawRequests.map((r) => (
-                  <div key={r.id} className="p-3 bg-secondary rounded-xl flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">الصافي: {r.net_amount} ج</p>
-                      <p className="text-xs text-muted-foreground">العمولة: {r.commission} ج • {new Date(r.created_at).toLocaleDateString('ar-EG')}</p>
-                    </div>
-                    <span className={`text-sm font-semibold ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>{r.status}</span>
-                  </div>
-                ))}
-                {withdrawRequests.length === 0 && (
-                  <p className="text-center text-muted-foreground py-6">لا توجد طلبات سحب</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        
       </div>
       <BottomNav />
     </div>
   );
+
+  function renderTxItem(t: any) {
+    const amount = Number(t.amount);
+    let sign = '-';
+    let color = 'text-destructive';
+    if (t.type === 'transfer' && t.receiver_id === wallet?.user_id) { sign = '+'; color = 'text-green-600'; }
+    if (t.type === 'consultation' && doctor && t.doctor_id === doctor.id) { sign = '+'; color = 'text-green-600'; }
+    return (
+      <div key={t.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{t.type === 'consultation' ? 'استشارة' : t.type === 'transfer' ? 'تحويل' : t.type}</p>
+          <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString('ar-EG')} • ID: {t.id}</p>
+        </div>
+        <div className={`text-lg font-bold ${color}`}>
+          {sign}{amount.toFixed(2)} ج
+        </div>
+      </div>
+    );
+  }
 };
 
 export default Wallet;
