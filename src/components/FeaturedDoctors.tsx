@@ -24,13 +24,13 @@ const FeaturedDoctors = () => {
   const loadFeaturedDoctors = async () => {
     const { data } = await supabase
       .from("doctors")
-      .select("*")
+      .select("*, profiles(avatar_url)")
       .eq("is_active", true)
       .eq("is_verified", true)
       .order("created_at", { ascending: false })
       .limit(6);
 
-    if (data) setDoctors(data);
+    if (data) setDoctors(data as any);
   };
 
   if (doctors.length === 0) return null;
@@ -48,7 +48,7 @@ const FeaturedDoctors = () => {
               <div className="flex flex-col items-center text-center space-y-2">
                 <div className="relative">
                   <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-primary/30 shadow-inner">
-                    <AvatarImage src={doctor.image_url || '/placeholder.svg'} alt={doctor.doctor_name} loading="lazy" className="object-cover" />
+                    <AvatarImage src={doctor.image_url || (doctor as any).profiles?.avatar_url || '/placeholder.svg'} alt={doctor.doctor_name} loading="lazy" className="object-cover" />
                     <AvatarFallback className="text-lg sm:text-xl bg-gradient-to-br from-primary to-primary-light text-white">
                       {doctor.doctor_name?.charAt(0) || "د"}
                     </AvatarFallback>
