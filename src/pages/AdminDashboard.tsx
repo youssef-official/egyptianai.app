@@ -78,7 +78,7 @@ const AdminDashboard = () => {
 
     const { data: doctorsData } = await supabase
       .from("doctors")
-      .select("*")
+      .select("*, profiles(avatar_url)")
       .order("created_at", { ascending: false });
 
     const { data: doctorReqs } = await supabase
@@ -870,7 +870,7 @@ const AdminDashboard = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1">
                       <Avatar className="w-16 h-16 border-2 border-primary/20">
-                        <AvatarImage src={doctor.image_url} />
+                        <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
                           {doctor.doctor_name?.charAt(0) || 'د'}
                         </AvatarFallback>
