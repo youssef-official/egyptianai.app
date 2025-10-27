@@ -149,7 +149,7 @@ const DoctorDashboard = () => {
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select("*, profiles(*)")
+      .select("*, profiles(*), doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 
@@ -526,13 +526,19 @@ const DoctorDashboard = () => {
               <Button onClick={handleSearch}>بحث</Button>
             </div>
             {searchResult && (
-              <div className="mt-4 p-4 bg-secondary rounded-lg">
+              <div className="mt-4 p-4 bg-secondary rounded-lg space-y-2">
                 {searchKind === 'transaction' && (
                   <>
                     <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
                     <p><strong>المبلغ:</strong> {searchResult.amount} جنيه</p>
                     <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
                     {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
+                    {searchResult.doctors && (
+                      <div className="mt-2 p-2 rounded-md bg-background">
+                        <p className="font-semibold">بيانات الطبيب</p>
+                        <p className="text-sm">{searchResult.doctors?.doctor_name} • {searchResult.doctors?.medical_departments?.name_ar}</p>
+                      </div>
+                    )}
                   </>
                 )}
                 {searchKind === 'withdraw' && (
