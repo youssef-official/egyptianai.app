@@ -124,14 +124,14 @@ const Doctors = () => {
               {doctors.filter(d => d.is_verified).map((doctor) => (
                 <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
                   <div className="flex items-center gap-4 p-4">
-                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-primary shadow-lg">
+                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-primary shadow-lg ml-2 order-2 md:order-1 md:ml-0">
                       <AvatarImage src={doctor.image_url} className="object-cover" />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary-light text-white">
                         {doctor.doctor_name?.charAt(0) || 'د'}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 order-1 md:order-2">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-lg font-bold truncate">{doctor.doctor_name}</h3>
                         <img src={verifiedBadge} alt="Verified" className="w-5 h-5 flex-shrink-0" />
@@ -165,14 +165,14 @@ const Doctors = () => {
               {doctors.filter(d => !d.is_verified).map((doctor) => (
                 <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
                   <div className="flex items-center gap-4 p-4">
-                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-gray-300 shadow-lg">
+                    <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-gray-300 shadow-lg ml-2 order-2 md:order-1 md:ml-0">
                       <AvatarImage src={doctor.image_url} className="object-cover" />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-gray-400 to-gray-500 text-white">
                         {doctor.doctor_name?.charAt(0) || 'د'}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 order-1 md:order-2">
                       <h3 className="text-lg font-bold mb-1 truncate">{doctor.doctor_name}</h3>
                       <p className="text-sm text-muted-foreground mb-2">{doctor.specialization_ar}</p>
                       {doctor.bio_ar && (

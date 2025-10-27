@@ -263,40 +263,14 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground mb-4">
-                التوثيق يساعدك على زيادة ثقة المرضى وظهورك في قسم "أبرز الأطباء"
+                لا يمكنك الدخول كطبيب قبل إرسال مستنداتك والموافقة عليها.
               </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full">
-                    طلب التوثيق
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="rounded-3xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-center">التوثيق والتطوير</DialogTitle>
-                    <DialogDescription className="text-center pt-4">
-                      للحصول على التوثيق، تواصل مع المشرف عبر واتساب
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-col items-center gap-4 py-4">
-                    <MessageCircle className="w-16 h-16 text-primary" />
-                    <a
-                      href="https://wa.me/201108279642"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full"
-                    >
-                      <Button className="w-full bg-green-500 hover:bg-green-600 rounded-full text-white gap-2">
-                        <MessageCircle className="w-5 h-5" />
-                        تواصل عبر واتساب
-                      </Button>
-                    </a>
-                    <p className="text-sm text-muted-foreground text-center">
-                      +201108279642
-                    </p>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                onClick={() => navigate('/doctor-application')}
+                className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full"
+              >
+                إرسال المستندات للتوثيق
+              </Button>
             </CardContent>
           </Card>
         )}

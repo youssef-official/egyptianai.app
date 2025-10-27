@@ -70,6 +70,25 @@ const DoctorDashboard = () => {
       return;
     }
 
+    // Ensure doctor request approved before proceeding
+    const { data: docReq } = await supabase
+      .from('doctor_requests')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!docReq || docReq.status !== 'approved') {
+      toast({
+        title: 'غير موثق بعد',
+        description: 'لا يمكنك الدخول. أرسل شهادتك لإثبات أنك طبيب وانتظر القبول.',
+        variant: 'destructive',
+      });
+      navigate('/doctor-application');
+      return;
+    }
+
     // Get doctor info
     const { data: doctorData } = await supabase
       .from("doctors")
@@ -127,7 +146,7 @@ const DoctorDashboard = () => {
     const { data, error } = await supabase
       .from("transactions")
       .select("*, profiles(*)")
-      .eq("id", searchId)
+      .eq("id", searchId.toUpperCase())
       .single();
 
     if (error || !data) {

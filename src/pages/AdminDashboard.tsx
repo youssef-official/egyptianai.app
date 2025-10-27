@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle, XCircle, Users, DollarSign, TrendingUp, Shield, ShieldOff, Search } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Users, DollarSign, TrendingUp, Shield, ShieldOff, Search, Eye } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ const AdminDashboard = () => {
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctorRequests, setDoctorRequests] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalCommissions: 0 });
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
   const [selectedImage, setSelectedImage] = useState("");
@@ -79,6 +80,11 @@ const AdminDashboard = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
+    const { data: doctorReqs } = await supabase
+      .from("doctor_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
     const { data: wallets } = await supabase.from("wallets").select("balance");
     const totalBalance = wallets?.reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     
@@ -92,6 +98,7 @@ const AdminDashboard = () => {
     setWithdrawRequests(withdraws || []);
     setUsers(usersData || []);
     setDoctors(doctorsData || []);
+    setDoctorRequests(doctorReqs || []);
     setStats({
       totalUsers: usersData?.length || 0,
       totalBalance,
@@ -123,10 +130,17 @@ const AdminDashboard = () => {
       })
       .eq("id", requestId);
 
-    toast({
-      title: "تمت الموافقة!",
-      description: "تم إضافة الرصيد للمستخدم",
-    });
+    // Send email
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (prof?.email) {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ type: 'deposit_approved', to: prof.email, data: { name: prof.full_name, amount, notes: adminNotes[requestId] || '' } })
+      }).catch(() => {});
+    }
+
+    toast({ title: "تمت الموافقة!", description: "تم إضافة الرصيد للمستخدم" });
 
     loadData();
   };
@@ -140,10 +154,20 @@ const AdminDashboard = () => {
       })
       .eq("id", requestId);
 
-    toast({
-      title: "تم الرفض",
-      description: "تم رفض الطلب",
-    });
+    // Email user
+    const dep = depositRequests.find(r => r.id === requestId);
+    if (dep) {
+      const { data: prof } = await supabase.from('profiles').select('*').eq('id', dep.user_id).single();
+      if (prof?.email) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ type: 'deposit_rejected', to: prof.email, data: { name: prof.full_name, amount: dep.amount, notes: adminNotes[requestId] || '' } })
+        }).catch(() => {});
+      }
+    }
+
+    toast({ title: "تم الرفض", description: "تم رفض الطلب" });
 
     loadData();
   };
@@ -172,10 +196,20 @@ const AdminDashboard = () => {
       })
       .eq("id", requestId);
 
-    toast({
-      title: "تمت الموافقة!",
-      description: "تم خصم المبلغ الإجمالي من رصيد الطبيب",
-    });
+    // Email doctor
+    const req = withdrawRequests.find(r => r.id === requestId);
+    if (req) {
+      const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id || doctorUserId).single();
+      if (doctorProfile?.email) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ type: 'withdraw_approved', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
+        }).catch(() => {});
+      }
+    }
+
+    toast({ title: "تمت الموافقة!", description: "تم خصم المبلغ الإجمالي من رصيد الطبيب" });
 
     loadData();
   };
@@ -189,10 +223,20 @@ const AdminDashboard = () => {
       })
       .eq("id", requestId);
 
-    toast({
-      title: "تم الرفض",
-      description: "تم رفض طلب السحب",
-    });
+    // Email doctor
+    const req = withdrawRequests.find(r => r.id === requestId);
+    if (req) {
+      const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id).single();
+      if (doctorProfile?.email) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ type: 'withdraw_rejected', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
+        }).catch(() => {});
+      }
+    }
+
+    toast({ title: "تم الرفض", description: "تم رفض طلب السحب" });
 
     loadData();
   };
@@ -223,6 +267,98 @@ const AdminDashboard = () => {
     loadData();
   };
 
+  const approveDoctorRequest = async (req: any) => {
+    // Mark request approved and create doctor profile if not exists
+    const { error: updErr } = await supabase
+      .from('doctor_requests')
+      .update({ status: 'approved' })
+      .eq('id', req.id);
+    if (updErr) {
+      toast({ title: 'خطأ', description: updErr.message, variant: 'destructive' });
+      return;
+    }
+
+    // Ensure a doctors row exists; if exists, just set is_verified true
+    const { data: existing } = await supabase
+      .from('doctors')
+      .select('*')
+      .eq('user_id', req.user_id)
+      .maybeSingle();
+
+    if (!existing) {
+      // Create minimal doctor row; details can be edited later
+      const { error: insErr } = await supabase
+        .from('doctors')
+        .insert([{
+          user_id: req.user_id,
+          department_id: (await supabase.from('medical_departments').select('id').limit(1).maybeSingle()).data?.id || null,
+          specialization_ar: req.specialization,
+          specialization_en: req.specialization,
+          price: 100,
+          whatsapp_number: req.phone,
+          doctor_name: req.full_name,
+          phone_number: req.phone,
+          is_active: false,
+          is_verified: true,
+        }]);
+      if (insErr) {
+        toast({ title: 'تم تحديث الطلب لكن لم يتم إنشاء ملف الطبيب', description: insErr.message });
+      }
+    } else {
+      await supabase.from('doctors').update({ is_verified: true }).eq('id', existing.id);
+    }
+
+    // Send email (doctor request approved)
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
+    if (prof?.email) {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
+        body: JSON.stringify({
+          type: 'doctor_request_approved',
+          to: prof.email,
+          data: { name: req.full_name }
+        })
+      }).catch(() => {});
+    }
+
+    toast({ title: 'تم القبول', description: 'تم قبول طلب الطبيب' });
+    loadData();
+  };
+
+  const rejectDoctorRequest = async (req: any) => {
+    const { error } = await supabase
+      .from('doctor_requests')
+      .update({ status: 'rejected', admin_notes: adminNotes[req.id] || '' })
+      .eq('id', req.id);
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    const { data: prof2 } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
+    if (prof2?.email) {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
+        body: JSON.stringify({
+          type: 'doctor_request_rejected',
+          to: prof2.email,
+          data: { name: req.full_name, amount: '', notes: adminNotes[req.id] || '' }
+        })
+      }).catch(() => {});
+    }
+
+    toast({ title: 'تم الرفض', description: 'تم رفض طلب الطبيب' });
+    loadData();
+  };
+
   const handleSearch = async () => {
     if (!searchId) {
       toast({
@@ -235,7 +371,7 @@ const AdminDashboard = () => {
 
     const { data, error } = await supabase
       .from("transactions")
-      .select("*, profiles(full_name, avatar_url, phone)")
+      .select("*, profiles(full_name, avatar_url, phone), doctors(*, medical_departments(*))")
       .eq("id", searchId.toUpperCase())
       .maybeSingle();
 
@@ -360,6 +496,22 @@ const AdminDashboard = () => {
                     <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
                   </div>
                 </div>
+                {searchResult.doctors && (
+                  <div className="bg-background p-3 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                        <AvatarImage src={searchResult.doctors?.image_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                          {searchResult.doctors?.doctor_name?.charAt(0) || 'د'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{searchResult.doctors?.doctor_name}</p>
+                        <p className="text-xs text-muted-foreground">{searchResult.doctors?.medical_departments?.name_ar}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {searchResult.description && (
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground text-sm">الوصف</p>
@@ -372,13 +524,97 @@ const AdminDashboard = () => {
         </Card>
 
         <Tabs defaultValue="deposits" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="deposits">الإيداع</TabsTrigger>
             <TabsTrigger value="withdrawals">السحب</TabsTrigger>
+            <TabsTrigger value="doctor-requests">طلبات الأطباء</TabsTrigger>
             <TabsTrigger value="active-doctors">الطلبات النشطة</TabsTrigger>
             <TabsTrigger value="doctors">الأطباء</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
           </TabsList>
+          <TabsContent value="doctor-requests" className="space-y-4">
+            {doctorRequests.map((req) => (
+              <Card key={req.id} className="rounded-3xl border-0 shadow-medium">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{req.full_name}</span>
+                    <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                      {req.status}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {req.phone} • {req.specialization}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    {[req.certificate_url, req.id_card_front_url, req.id_card_back_url].map((path: string, idx: number) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        className="rounded-xl"
+                        size="sm"
+                        onClick={async () => {
+                          const { data, error } = await supabase.storage
+                            .from('doctor-documents')
+                            .createSignedUrl(path, 60 * 60);
+                          if (!error && data?.signedUrl) {
+                            window.open(data.signedUrl, '_blank');
+                          }
+                        }}
+                      >
+                        <Eye className="w-4 h-4 ml-2" />
+                        عرض المستند {idx + 1}
+                      </Button>
+                    ))}
+                  </div>
+                  {req.status === 'approved' && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[req.certificate_url, req.id_card_front_url, req.id_card_back_url].map((path: string, idx: number) => (
+                        <Button
+                          key={`del-${idx}`}
+                          variant="destructive"
+                          className="rounded-xl"
+                          size="sm"
+                          onClick={async () => {
+                            // Delete the file to save storage space
+                            await supabase.storage.from('doctor-documents').remove([path]);
+                            toast({ title: 'تم الحذف', description: `تم حذف المستند ${idx + 1}` });
+                          }}
+                        >
+                          حذف المستند {idx + 1}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {req.status === 'pending' && (
+                    <>
+                      <Textarea
+                        placeholder="ملاحظات..."
+                        value={adminNotes[req.id] || ''}
+                        onChange={(e) => setAdminNotes({ ...adminNotes, [req.id]: e.target.value })}
+                        className="rounded-2xl text-sm"
+                        rows={2}
+                      />
+                      <div className="flex gap-2">
+                        <Button onClick={() => approveDoctorRequest(req)} className="flex-1 bg-green-600 hover:bg-green-700 rounded-full" size="sm">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          قبول وتوثيق
+                        </Button>
+                        <Button onClick={() => rejectDoctorRequest(req)} variant="destructive" className="flex-1 rounded-full" size="sm">
+                          <XCircle className="w-4 h-4 mr-2" />
+                          رفض
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            {doctorRequests.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">لا توجد طلبات حالياً</p>
+            )}
+          </TabsContent>
 
           <TabsContent value="deposits" className="space-y-4">
             {depositRequests.map((req) => (
