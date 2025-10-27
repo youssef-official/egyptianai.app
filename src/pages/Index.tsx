@@ -109,37 +109,36 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* Wallet Card */}
-        <Card className="mb-6 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-4">
-            <div className="flex items-center gap-2 text-base">
-              <Wallet className="w-5 h-5" />
-              محفظتي
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6 pb-6">
-            <div className="text-center space-y-4">
-              <div className="text-3xl font-bold text-primary">
-                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-lg">جنيه</span>
+        {/* Actions */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card 
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            onClick={() => navigate("/wallet")}
+          >
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <Wallet className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-sm font-semibold">المحفظة</div>
               </div>
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-10 px-6"
-                  onClick={() => navigate("/wallet")}
-                >
-                  إيداع
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="rounded-full h-10 px-6"
-                  onClick={() => navigate("/transfer")}
-                >
-                  تحويل
-                </Button>
+            </CardHeader>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in rounded-3xl border-0 shadow-medium"
+            onClick={() => navigate("/transfer")}
+          >
+            <CardHeader className="p-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <ArrowRight className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-sm font-semibold">تحويل</div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+          </Card>
+        </div>
 
         <FeaturedDoctors />
 

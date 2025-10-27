@@ -99,12 +99,24 @@ const Consultation = () => {
       return;
     }
 
-    // Here you would normally send the report to a reports table
-    toast({
-      title: "تم إرسال التبليغ",
-      description: "شكراً لك، سيتم مراجعة التبليغ قريباً",
-    });
-    setReportText("");
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('غير مسجل الدخول');
+
+      await supabase.from('doctor_reports').insert({
+        reporter_id: currentUser.id,
+        doctor_id: doctor.id,
+        message: reportText.trim(),
+      });
+
+      toast({
+        title: "تم إرسال التبليغ",
+        description: "شكراً لك، سيتم مراجعة التبليغ قريباً",
+      });
+      setReportText("");
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    }
   };
 
   if (loading) {
