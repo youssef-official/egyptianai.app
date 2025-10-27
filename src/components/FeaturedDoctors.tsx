@@ -43,6 +43,7 @@ const FeaturedDoctors = () => {
           <Card 
             key={doctor.id} 
             className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer bg-gradient-to-b from-background to-primary/5"
+            onClick={() => window.location.assign(`/consultation?doctorId=${doctor.id}`)}
           >
             <CardContent className="p-3">
               <div className="flex flex-col items-center text-center space-y-2">

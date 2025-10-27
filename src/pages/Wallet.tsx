@@ -10,6 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -18,7 +20,7 @@ import BottomNav from "@/components/BottomNav";
 const Wallet = () => {
   // Deposit state handled in Deposit page
   const [wallet, setWallet] = useState<any>(null);
-  // const [depositRequests, setDepositRequests] = useState<any[]>([]);
+  const [depositRequests, setDepositRequests] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
@@ -26,6 +28,7 @@ const Wallet = () => {
   const [profile, setProfile] = useState<any>(null);
   const [showBalance, setShowBalance] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [consultations, setConsultations] = useState<any[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,6 +37,7 @@ const Wallet = () => {
   useEffect(() => {
     loadWallet();
     loadContextAndHistory();
+    loadDepositRequests();
   }, []);
 
   const loadWallet = async () => {
@@ -74,6 +78,15 @@ const Wallet = () => {
       .limit(10);
     setTransactions(txData || []);
 
+    // Load recent consultations for the user
+    const { data: consData } = await supabase
+      .from('consultations')
+      .select('*, doctors(doctor_name, image_url, specialization_ar)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    setConsultations(consData || []);
+
     // Load withdraw requests if doctor
     if (doctorData?.id) {
       const { data: wdData } = await supabase
@@ -88,7 +101,17 @@ const Wallet = () => {
     }
   };
 
-  // deposit requests moved to Deposit page
+  const loadDepositRequests = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from('deposit_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    setDepositRequests(data || []);
+  };
 
   // moved to Deposit page
 
@@ -159,9 +182,60 @@ const Wallet = () => {
           </CardContent>
         </Card>
 
-        {/* ملاحظات الإيداع أصبحت في صفحة /deposit */}
+        {/* آخر الاستشارات */}
+        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle>آخر الاستشارات</CardTitle>
+            <CardDescription>أحدث الاستشارات التي قمت بها</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {consultations.map((c) => (
+                <div key={c.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={c.doctors?.image_url} />
+                    <AvatarFallback>{c.doctors?.doctor_name?.charAt(0) || 'د'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{c.doctors?.doctor_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{c.doctors?.specialization_ar}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('ar-EG')} • ID: {c.id}</p>
+                  </div>
+                  <div className="text-primary font-bold">{Number(c.amount).toFixed(2)} ج</div>
+                </div>
+              ))}
+              {consultations.length === 0 && (
+                <p className="text-center text-muted-foreground py-6">لا توجد استشارات بعد</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* نموذج الإيداع أزيل من المحفظة وانتقل إلى /deposit */}
+        {/* آخر عمليات الإيداع */}
+        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle>آخر عمليات الإيداع</CardTitle>
+            <CardDescription>أحدث طلبات شحن الرصيد</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {depositRequests.map((d) => (
+                <div key={d.id} className="flex items-center justify-between p-3 bg-secondary rounded-xl">
+                  <div>
+                    <p className="font-medium">{Number(d.amount).toFixed(2)} ج</p>
+                    <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString('ar-EG')}</p>
+                  </div>
+                  <Badge variant={d.status === 'approved' ? 'default' : d.status === 'rejected' ? 'destructive' : 'secondary'}>
+                    {d.status}
+                  </Badge>
+                </div>
+              ))}
+              {depositRequests.length === 0 && (
+                <p className="text-center text-muted-foreground py-6">لا توجد عمليات إيداع بعد</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Payments */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
