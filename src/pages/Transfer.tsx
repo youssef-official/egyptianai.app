@@ -68,77 +68,24 @@ const Transfer = () => {
     setLoading(true);
 
     try {
-      // Check if receiver exists by ID or email
-      let receiverWallet: any = null;
-      let receiverUserId = receiverId;
+      // Resolve receiver as exact user_id only for now
+      const receiverUserId = receiverId;
 
-      // Try to find by user_id first
-      const { data: walletById } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", receiverId)
+      const { data: receiverWallet } = await supabase
+        .from('wallets')
+        .select('*')
+        .eq('user_id', receiverUserId)
         .maybeSingle();
 
-      if (walletById) {
-        receiverWallet = walletById;
-      } else {
-        // Try to find by email
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("id", receiverId)
-          .maybeSingle();
-
-        if (profile) {
-          const { data: walletByEmail } = await supabase
-            .from("wallets")
-            .select("*")
-            .eq("user_id", profile.id)
-            .maybeSingle();
-          
-          if (walletByEmail) {
-            receiverWallet = walletByEmail;
-            receiverUserId = profile.id;
-          }
-        }
-      }
-
-      if (!receiverWallet) {
-        throw new Error("المستخدم المستقبل غير موجود");
-      }
+      if (!receiverWallet) throw new Error('المستخدم المستقبل غير موجود');
 
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user!.id === receiverUserId) {
-        throw new Error("لا يمكنك التحويل لنفسك");
-      }
+      if (user!.id === receiverUserId) throw new Error('لا يمكنك التحويل لنفسك');
 
-      // Deduct from sender
-      const newSenderBalance = parseFloat(wallet.balance) - transferAmount;
-      await supabase
-        .from("wallets")
-        .update({ balance: newSenderBalance })
-        .eq("user_id", user!.id);
-
-      // Add to receiver
-      const newReceiverBalance = parseFloat(String(receiverWallet.balance)) + transferAmount;
-      await supabase
-        .from("wallets")
-        .update({ balance: newReceiverBalance })
-        .eq("user_id", receiverUserId);
-
-      // Create transaction
-      const transactionId = `TR${Date.now()}`;
-      await supabase
-        .from("transactions")
-        .insert({
-          id: transactionId,
-          user_id: user!.id,
-          receiver_id: receiverUserId,
-          amount: transferAmount,
-          type: "transfer",
-          description: "تحويل رصيد"
-        });
+      // Perform transfer via RPC to be atomic and generate ID
+      const { data: rpcData, error } = await supabase.rpc('perform_transfer', { _receiver_id: receiverUserId, _amount: transferAmount });
+      if (error) throw error;
+      const transactionId = rpcData?.[0]?.tx_id || '';
 
       toast({
         title: "تم التحويل!",
@@ -183,18 +130,18 @@ const Transfer = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleTransfer} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="receiverId">معرّف المستقبل (User ID أو البريد الإلكتروني)</Label>
+              <Label htmlFor="receiverId">معرّف المستقبل (User ID)</Label>
                 <Input
                   id="receiverId"
                   type="text"
                   value={receiverId}
                   onChange={(e) => setReceiverId(e.target.value)}
-                  placeholder="أدخل User ID أو البريد الإلكتروني..."
+                  placeholder="أدخل User ID للمستخدم..."
                   required
                   className="text-right"
                 />
                 <p className="text-xs text-muted-foreground">
-                  يمكنك استخدام User ID أو البريد الإلكتروني للمستخدم المستقبل
+                  ملاحظة: حالياً نقبل User ID فقط لضمان الدقة
                 </p>
               </div>
 

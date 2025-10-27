@@ -74,80 +74,16 @@ const Consultation = () => {
   const handleStartConsultation = async () => {
     if (!doctor || !wallet) return;
 
-    const fee = parseFloat(doctor.consultation_fee || doctor.price || 0);
-
-    if (wallet.balance < fee) {
-      toast({
-        title: "رصيد غير كافٍ",
-        description: "ليس لديك رصيد كافٍ لبدء الاستشارة",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setProcessing(true);
-
     try {
-      // Deduct from user wallet
-      const newUserBalance = parseFloat(wallet.balance) - fee;
-      await supabase
-        .from("wallets")
-        .update({ balance: newUserBalance })
-        .eq("user_id", user!.id);
-
-      // Add to doctor wallet
-      const { data: doctorWallet } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", doctor.user_id)
-        .single();
-
-      const newDoctorBalance = parseFloat(String(doctorWallet.balance)) + fee;
-      await supabase
-        .from("wallets")
-        .update({ balance: newDoctorBalance })
-        .eq("user_id", String(doctor.user_id));
-
-      // Create transaction with unique ID
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      const txId = `CS${timestamp}${random}`;
-      
-      await supabase
-        .from("transactions")
-        .insert({
-          id: txId,
-          user_id: user!.id,
-          doctor_id: String(doctorId),
-          amount: fee,
-          type: "consultation",
-          description: `استشارة مع ${doctor.doctor_name}`
-        });
-
-      // Insert into consultations table
-      await supabase
-        .from("consultations")
-        .insert({
-          id: txId,
-          user_id: user!.id,
-          doctor_id: String(doctorId),
-          amount: fee,
-          department_id: doctor.department_id
-        });
-
+      const { data, error } = await supabase.rpc('perform_consultation', { _doctor_id: doctorId });
+      if (error) throw error;
+      const txId = data?.[0]?.tx_id || '';
       setTransactionId(txId);
-      loadData(); // Reload to update balance and last transaction
-
-      toast({
-        title: "تم بدء الاستشارة!",
-        description: `تم خصم ${fee} جنيه من رصيدك`,
-      });
+      await loadData();
+      toast({ title: "تم بدء الاستشارة!", description: `معرف العملية: ${txId}` });
     } catch (error: any) {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -276,7 +212,7 @@ const Consultation = () => {
                     <p>معرف العملية: {transactionId}</p>
                     <p>يمكنك التواصل مع الطبيب عبر الواتساب:</p>
                     <a 
-                      href={`https://wa.me/${doctor.whatsapp_number}?text=مرحباً، أنا ${user?.email}، معرف العملية: ${transactionId}`}
+                      href={`https://wa.me/${doctor.whatsapp_number}?text=مرحباً، أنا ${user?.email || ''}، معرف العملية: ${transactionId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"

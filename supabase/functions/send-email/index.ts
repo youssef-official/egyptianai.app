@@ -197,6 +197,74 @@ serve(async (req) => {
         </body>
         </html>
       `;
+    } else if (type === 'doctor_request_approved') {
+      subject = 'تم قبول طلب التسجيل كطبيب';
+      html = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); padding: 30px; text-align: center; }
+            .header img { max-width: 80px; margin-bottom: 15px; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" />
+              <h1>تم قبول طلبك</h1>
+            </div>
+            <div class="content">
+              <h2>مبروك د/ ${data.name}</h2>
+              <p>تمت الموافقة على طلبك للتسجيل كطبيب في المنصة. يمكنك الآن تسجيل الدخول إلى لوحة تحكم الطبيب وبدء تقديم الاستشارات.</p>
+            </div>
+            <div class="footer">
+              <p>© 2025 منصة الاستشارات الطبية</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    } else if (type === 'doctor_request_rejected') {
+      subject = 'تم رفض طلب التسجيل كطبيب';
+      html = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); padding: 30px; text-align: center; }
+            .header img { max-width: 80px; margin-bottom: 15px; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" />
+              <h1>تم رفض الطلب</h1>
+            </div>
+            <div class="content">
+              <h2>عزيزي ${data.name}</h2>
+              <p>نأسف لإبلاغك أنه تم رفض طلب تسجيلك كطبيب في الوقت الحالي.</p>
+              ${data.notes ? `<p><strong>السبب:</strong> ${data.notes}</p>` : ''}
+              <p>يمكنك إعادة التقديم بعد استيفاء المتطلبات.</p>
+            </div>
+            <div class="footer">
+              <p>© 2025 منصة الاستشارات الطبية</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
     }
 
     const response = await fetch('https://api.resend.com/emails', {
