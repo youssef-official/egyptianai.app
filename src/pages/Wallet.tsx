@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, Upload, Wallet as WalletIcon, Copy, TrendingUp } from "lucide-react";
+import { Upload, Wallet as WalletIcon, Copy, TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -35,6 +35,9 @@ const Wallet = () => {
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
   const [showDeposit, setShowDeposit] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [showBalance, setShowBalance] = useState(true);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,6 +77,12 @@ const Wallet = () => {
   const loadWallet = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      setProfile(profileData);
       const { data } = await supabase
         .from("wallets")
         .select("*")
@@ -220,42 +229,59 @@ const Wallet = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
       <div className="container mx-auto max-w-2xl">
-        <div className="mb-8">
-          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
-            <ArrowRight className="w-4 h-4" />
-            العودة
-          </Button>
+        {/* Header: greeting, profile icon (right) and notifications (left) */}
+        <div className="mb-6 flex items-center justify-between">
+          <Bell className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">مرحباً،</p>
+              <p className="text-sm font-semibold">{profile?.full_name || 'عزيزي المستخدم'}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+              <User className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
         {/* Balance Circle + Quick Actions */}
         <Card className="shadow-strong animate-fade-in rounded-3xl border-0 mb-6">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2">
-              <WalletIcon className="w-5 h-5" />
-              المحفظة
-            </CardTitle>
-            <CardDescription className="text-white/90">ملخص سريع لرصيدك</CardDescription>
-          </CardHeader>
           <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-muted-foreground">الرصيد</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowBalance(!showBalance)}>
+                {showBalance ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
             <div className="flex items-center justify-between gap-4">
               <div className="relative w-28 h-28">
-                <div className="w-28 h-28 rounded-full border-8 border-primary/20 flex items-center justify-center">
+                <div className="w-28 h-28 rounded-full border-8 border-primary/20 flex items-center justify-center animate-pulse-glow">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{wallet?.balance?.toFixed(2) || '0.00'}</div>
+                    <div className="text-3xl font-bold text-primary">{showBalance ? (wallet?.balance?.toFixed(2) || '0.00') : '•••••'}</div>
                     <div className="text-xs text-muted-foreground">جنيه</div>
                   </div>
                 </div>
-                <div className="absolute inset-0 rounded-full" style={{
-                  background: 'conic-gradient(var(--primary) 360deg, transparent 0)'
-                }} />
+                <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(var(--primary) 360deg, transparent 0)' }} />
               </div>
-              <div className="flex-1 grid grid-cols-2 gap-2">
-                <Button onClick={() => navigate('/transfer')} className="rounded-2xl h-11">
-                  تحويل
-                </Button>
-                <Button onClick={handleDepositClick} variant="outline" className="rounded-2xl h-11">
-                  إيداع
-                </Button>
+              {/* Action buttons - three in a row */}
+              <div className="flex-1 grid grid-cols-3 gap-3">
+                <div className="flex flex-col items-center">
+                  <Button onClick={handleDepositClick} className="rounded-full h-12 w-12 flex items-center justify-center shadow-medium">
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                  <span className="text-xs mt-2">شحن الرصيد</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <Button onClick={() => navigate('/transfer')} variant="outline" className="rounded-full h-12 w-12 flex items-center justify-center">
+                    <ArrowRightLeft className="w-5 h-5" />
+                  </Button>
+                  <span className="text-xs mt-2">تحويل</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <Button onClick={() => navigate('/doctors')} variant="secondary" className="rounded-full h-12 w-12 flex items-center justify-center">
+                    <Heart className="w-5 h-5" />
+                  </Button>
+                  <span className="text-xs mt-2">المفضلة</span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -406,7 +432,27 @@ const Wallet = () => {
         </Card>
         )}
 
-        {/* History Tabs */}
+        {/* Recent Payments */}
+        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle>المدفوعات الأخيرة</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowAllHistory(true)}>الكل</Button>
+            </div>
+            <CardDescription>آخر الحركات على حسابك</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {transactions.slice(0,5).map((t) => renderTxItem(t))}
+              {transactions.length === 0 && (
+                <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Full History Tabs */}
+        {showAllHistory && (
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -463,6 +509,7 @@ const Wallet = () => {
             </Tabs>
           </CardContent>
         </Card>
+        )}
 
         
       </div>
