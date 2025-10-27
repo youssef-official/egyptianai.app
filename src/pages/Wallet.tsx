@@ -80,7 +80,7 @@ const Wallet = () => {
     // Load recent consultations for the user
     const { data: consData } = await supabase
       .from('consultations')
-      .select('*, doctors(doctor_name, image_url, specialization_ar)')
+      .select('*, doctors(doctor_name, image_url, specialization_ar, profiles(avatar_url))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -213,7 +213,7 @@ const Wallet = () => {
                   <div key={item.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
                     {item.kind === 'consultation' ? (
                       <Avatar className="w-10 h-10 ring-2 ring-primary/20">
-                        <AvatarImage src={item.doctor?.image_url} alt={item.doctor?.doctor_name || 'دكتور'} className="object-cover" />
+                        <AvatarImage src={item.doctor?.image_url || item.doctor?.profiles?.avatar_url || '/placeholder.svg'} alt={item.doctor?.doctor_name || 'دكتور'} className="object-cover" />
                         <AvatarFallback>{item.doctor?.doctor_name?.charAt(0) || 'د'}</AvatarFallback>
                       </Avatar>
                     ) : (
