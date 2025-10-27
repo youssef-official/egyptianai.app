@@ -375,7 +375,7 @@ const AdminDashboard = () => {
 
     const { data, error } = await supabase
       .from("transactions")
-      .select("*, profiles(full_name, avatar_url, phone), doctors(*, medical_departments(*))")
+      .select("*, profiles(*), doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 
