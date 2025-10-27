@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wallet as WalletIcon, TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
+import { TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -29,32 +29,7 @@ const Wallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const paymentDetails: any = {
-    vodafone: {
-      name: "Vodafone Cash",
-      icon: "https://cdn0.iconfinder.com/data/icons/circle-icons/512/vodafone.png",
-      number: "01108279642",
-      note: "افتح تطبيق فودافون كاش أو اطلب كود *9# ثم حوّل المبلغ إلى الرقم الموضح.",
-    },
-    etisalat: {
-      name: "Etisalat Cash",
-      icon: "https://images.seeklogo.com/logo-png/45/1/etisalat-logo-png_seeklogo-451518.png",
-      number: "0118279642",
-      note: "افتح تطبيق اتصالات كاش أو استخدم الكود *777# لتحويل المبلغ للرقم الموضح.",
-    },
-    telda: {
-      name: "Telda",
-      icon: "https://cdn.brandfetch.io/idBZNBQYTk/w/400/h/400/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1757255324312",
-      number: "@youssef2413",
-      note: "افتح تطبيق Telda ثم أرسل المبلغ إلى الحساب الموضح.",
-    },
-    instapay: {
-      name: "InstaPay",
-      icon: "https://upload.wikimedia.org/wikipedia/commons/2/20/InstaPay_Logo.png?20230411102327",
-      number: "5484460473322410",
-      note: "حوّل المبلغ عبر تطبيق Instapay إلى رقم البطاقة الموضح.\nاسم حامل البطاقة: YOUSSEF ELSAYED",
-    },
-  };
+  // deposit payment details moved to Deposit page
 
   useEffect(() => {
     loadWallet();
@@ -113,97 +88,11 @@ const Wallet = () => {
     }
   };
 
-  const loadDepositRequests = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from("deposit_requests")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      setDepositRequests(data || []);
-    }
-  };
+  // deposit requests moved to Deposit page
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "تم النسخ", description: "تم نسخ البيانات بنجاح." });
-  };
+  // moved to Deposit page
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!proofImage || !amount || !paymentMethod) {
-      toast({
-        title: "خطأ",
-        description: "يرجى ملء جميع الحقول",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const fileExt = proofImage.name.split(".").pop();
-      const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
-      const path = `${user!.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("deposit-proofs")
-        .upload(path, proofImage);
-
-      if (uploadError) throw uploadError;
-
-      await supabase.from("deposit_requests").insert({
-        user_id: user!.id,
-        amount: parseFloat(amount),
-        payment_method: paymentMethod,
-        proof_image_url: path,
-        status: "pending",
-      });
-
-      // Send deposit received email
-      try {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single();
-        if (prof?.email) {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-            },
-            body: JSON.stringify({
-              type: 'deposit_received',
-              to: prof.email,
-              data: { name: prof.full_name, amount: parseFloat(amount), method: paymentMethod }
-            })
-          });
-        }
-      } catch (_) {}
-
-      toast({
-        title: "تم الإرسال!",
-        description: "تم إرسال طلب الإيداع بنجاح. سيتم المراجعة قريباً.",
-      });
-
-      setAmount("");
-      setPaymentMethod("");
-      setProofImage(null);
-      loadDepositRequests();
-    } catch (error: any) {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // moved to Deposit page
 
   const handleDepositClick = () => {
     navigate('/deposit');
