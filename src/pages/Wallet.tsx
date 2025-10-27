@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, Upload, Wallet as WalletIcon, Copy } from "lucide-react";
+import { ArrowRight, Upload, Wallet as WalletIcon, Copy, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -30,6 +30,9 @@ const Wallet = () => {
   const [loading, setLoading] = useState(false);
   const [wallet, setWallet] = useState<any>(null);
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
+  const [doctor, setDoctor] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,6 +66,7 @@ const Wallet = () => {
   useEffect(() => {
     loadWallet();
     loadDepositRequests();
+    loadContextAndHistory();
   }, []);
 
   const loadWallet = async () => {
@@ -74,6 +78,40 @@ const Wallet = () => {
         .eq("user_id", user.id)
         .single();
       setWallet(data);
+    }
+  };
+
+  const loadContextAndHistory = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Detect if user is a doctor and get doctor id
+    const { data: doctorData } = await supabase
+      .from('doctors')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    setDoctor(doctorData);
+
+    // Load recent transactions (RLS will restrict to user-related only)
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('*, profiles(full_name, avatar_url), doctors(doctor_name, image_url)')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setTransactions(txData || []);
+
+    // Load withdraw requests if doctor
+    if (doctorData?.id) {
+      const { data: wdData } = await supabase
+        .from('withdraw_requests')
+        .select('*')
+        .eq('doctor_id', doctorData.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setWithdrawRequests(wdData || []);
+    } else {
+      setWithdrawRequests([]);
     }
   };
 
@@ -169,6 +207,11 @@ const Wallet = () => {
     }
   };
 
+  const scrollToDeposit = () => {
+    const el = document.getElementById('deposit-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
       <div className="container mx-auto max-w-2xl">
@@ -178,6 +221,40 @@ const Wallet = () => {
             العودة
           </Button>
         </div>
+
+        {/* Balance Circle + Quick Actions */}
+        <Card className="shadow-strong animate-fade-in rounded-3xl border-0 mb-6">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
+            <CardTitle className="flex items-center gap-2">
+              <WalletIcon className="w-5 h-5" />
+              المحفظة
+            </CardTitle>
+            <CardDescription className="text-white/90">ملخص سريع لرصيدك</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative w-28 h-28">
+                <div className="w-28 h-28 rounded-full border-8 border-primary/20 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{wallet?.balance?.toFixed(2) || '0.00'}</div>
+                    <div className="text-xs text-muted-foreground">جنيه</div>
+                  </div>
+                </div>
+                <div className="absolute inset-0 rounded-full" style={{
+                  background: 'conic-gradient(var(--primary) 360deg, transparent 0)'
+                }} />
+              </div>
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <Button onClick={() => navigate('/transfer')} className="rounded-2xl h-11">
+                  تحويل
+                </Button>
+                <Button onClick={scrollToDeposit} variant="outline" className="rounded-2xl h-11">
+                  إيداع
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {depositRequests
           .filter((req) => req.admin_notes && req.status !== "pending")
@@ -194,7 +271,7 @@ const Wallet = () => {
             </Alert>
           ))}
 
-        <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
+        <Card id="deposit-section" className="shadow-strong animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
             <CardTitle className="flex items-center gap-2">
               <WalletIcon className="w-5 h-5" />
@@ -321,6 +398,68 @@ const Wallet = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* History */}
+        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              تاريخ العمليات
+            </CardTitle>
+            <CardDescription>آخر التحويلات والاستشارات المرتبطة بحسابك</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {transactions.map((t) => {
+                const amount = Number(t.amount);
+                let sign = '-';
+                let color = 'text-destructive';
+                if (t.type === 'transfer' && t.receiver_id === wallet?.user_id) { sign = '+'; color = 'text-green-600'; }
+                if (t.type === 'consultation' && doctor && t.doctor_id === doctor.id) { sign = '+'; color = 'text-green-600'; }
+                return (
+                  <div key={t.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{t.type === 'consultation' ? 'استشارة' : t.type === 'transfer' ? 'تحويل' : t.type}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString('ar-EG')} • ID: {t.id}</p>
+                    </div>
+                    <div className={`text-lg font-bold ${color}`}>
+                      {sign}{amount.toFixed(2)} ج
+                    </div>
+                  </div>
+                );
+              })}
+              {transactions.length === 0 && (
+                <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Withdraw requests for doctors */}
+        {doctor && (
+          <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+            <CardHeader>
+              <CardTitle>طلبات السحب الأخيرة</CardTitle>
+              <CardDescription>متابعة حالة طلبات السحب الخاصة بك</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {withdrawRequests.map((r) => (
+                  <div key={r.id} className="p-3 bg-secondary rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">الصافي: {r.net_amount} ج</p>
+                      <p className="text-xs text-muted-foreground">العمولة: {r.commission} ج • {new Date(r.created_at).toLocaleDateString('ar-EG')}</p>
+                    </div>
+                    <span className={`text-sm font-semibold ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>{r.status}</span>
+                  </div>
+                ))}
+                {withdrawRequests.length === 0 && (
+                  <p className="text-center text-muted-foreground py-6">لا توجد طلبات سحب</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <BottomNav />
     </div>
