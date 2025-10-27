@@ -159,8 +159,7 @@ const Consultation = () => {
           </Alert>
         )}
 
-        {/* Full-width hero header */
-        }
+        {/* Full-width hero header */}
         <section className="w-full bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
             <div className="flex items-start gap-5 md:gap-6">
               <Avatar className="w-28 h-28 md:w-32 md:h-32 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden flex-shrink-0">
@@ -198,8 +197,7 @@ const Consultation = () => {
             </div>
         </section>
 
-        {/* Content sections */
-        }
+        {/* Content sections */}
         <div className="p-4 md:p-6 space-y-6">
             <div>
               <h3 className="font-semibold text-lg mb-2">نبذة عن الطبيب</h3>
