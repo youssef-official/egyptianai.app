@@ -25,16 +25,13 @@ import BottomNav from "@/components/BottomNav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Wallet = () => {
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [proofImage, setProofImage] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Deposit state handled in Deposit page
   const [wallet, setWallet] = useState<any>(null);
-  const [depositRequests, setDepositRequests] = useState<any[]>([]);
+  // const [depositRequests, setDepositRequests] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
-  const [showDeposit, setShowDeposit] = useState(false);
+  // const [showDeposit, setShowDeposit] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [showBalance, setShowBalance] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -70,7 +67,6 @@ const Wallet = () => {
 
   useEffect(() => {
     loadWallet();
-    loadDepositRequests();
     loadContextAndHistory();
   }, []);
 
