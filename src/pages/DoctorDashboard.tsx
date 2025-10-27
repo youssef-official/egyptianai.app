@@ -192,6 +192,18 @@ const DoctorDashboard = () => {
           status: "pending"
         });
 
+      // Email doctor that withdraw was received
+      try {
+        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (prof?.email) {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ type: 'withdraw_received', to: prof.email, data: { name: doctor.doctor_name, amount: netAmount } })
+          });
+        }
+      } catch (_) {}
+
       toast({
         title: "تم الإرسال!",
         description: `تم إرسال طلب سحب ${netAmount.toFixed(2)} جنيه. سيتم خصم ${totalAmount.toFixed(2)} جنيه من رصيدك (شامل عمولة 10%)`,

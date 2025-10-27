@@ -130,6 +130,25 @@ const Wallet = () => {
         status: "pending",
       });
 
+      // Send deposit received email
+      try {
+        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single();
+        if (prof?.email) {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            },
+            body: JSON.stringify({
+              type: 'deposit_received',
+              to: prof.email,
+              data: { name: prof.full_name, amount: parseFloat(amount), method: paymentMethod }
+            })
+          });
+        }
+      } catch (_) {}
+
       toast({
         title: "تم الإرسال!",
         description: "تم إرسال طلب الإيداع بنجاح. سيتم المراجعة قريباً.",

@@ -88,11 +88,12 @@ const AdminDashboard = () => {
     const { data: wallets } = await supabase.from("wallets").select("balance");
     const totalBalance = wallets?.reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     
-    const { data: transactions } = await supabase
-      .from("transactions")
-      .select("amount")
-      .eq("type", "consultation");
-    const totalCommissions = (transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0) * 0.1;
+    // Commission stats based on approved withdraw requests' commission field
+    const { data: approvedWithdraws } = await supabase
+      .from("withdraw_requests")
+      .select("commission, status")
+      .eq('status', 'approved');
+    const totalCommissions = approvedWithdraws?.reduce((sum, r) => sum + Number(r.commission || 0), 0) || 0;
 
     setDepositRequests(deposits || []);
     setWithdrawRequests(withdraws || []);
