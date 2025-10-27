@@ -12,7 +12,6 @@ import {
 import { TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 // no alerts in wallet after moving deposit page
@@ -21,7 +20,7 @@ const Wallet = () => {
   // Deposit state handled in Deposit page
   const [wallet, setWallet] = useState<any>(null);
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]); // kept for potential future use
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
   // const [showDeposit, setShowDeposit] = useState(false);
@@ -182,139 +181,71 @@ const Wallet = () => {
           </CardContent>
         </Card>
 
-        {/* آخر الاستشارات */}
+        {/* سجل موحد للاستشارات والإيداعات */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
           <CardHeader className="pb-2">
-            <CardTitle>آخر الاستشارات</CardTitle>
-            <CardDescription>أحدث الاستشارات التي قمت بها</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {consultations.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={c.doctors?.image_url} />
-                    <AvatarFallback>{c.doctors?.doctor_name?.charAt(0) || 'د'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{c.doctors?.doctor_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{c.doctors?.specialization_ar}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('ar-EG')} • ID: {c.id}</p>
-                  </div>
-                  <div className="text-primary font-bold">{Number(c.amount).toFixed(2)} ج</div>
-                </div>
-              ))}
-              {consultations.length === 0 && (
-                <p className="text-center text-muted-foreground py-6">لا توجد استشارات بعد</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* آخر عمليات الإيداع */}
-        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
-          <CardHeader className="pb-2">
-            <CardTitle>آخر عمليات الإيداع</CardTitle>
-            <CardDescription>أحدث طلبات شحن الرصيد</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {depositRequests.map((d) => (
-                <div key={d.id} className="flex items-center justify-between p-3 bg-secondary rounded-xl">
-                  <div>
-                    <p className="font-medium">{Number(d.amount).toFixed(2)} ج</p>
-                    <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString('ar-EG')}</p>
-                  </div>
-                  <Badge variant={d.status === 'approved' ? 'default' : d.status === 'rejected' ? 'destructive' : 'secondary'}>
-                    {d.status}
-                  </Badge>
-                </div>
-              ))}
-              {depositRequests.length === 0 && (
-                <p className="text-center text-muted-foreground py-6">لا توجد عمليات إيداع بعد</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Payments */}
-        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle>المدفوعات الأخيرة</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowAllHistory(true)}>الكل</Button>
-            </div>
-            <CardDescription>آخر الحركات على حسابك</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {transactions.slice(0,5).map((t) => renderTxItem(t))}
-              {transactions.length === 0 && (
-                <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Full History Tabs */}
-        {showAllHistory && (
-        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
-          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
               السجل
             </CardTitle>
-            <CardDescription>كل العمليات والطلبات الأخيرة</CardDescription>
+            <CardDescription>آخر الاستشارات وعمليات الإيداع</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid grid-cols-3 md:grid-cols-4 w-full mb-3">
-                <TabsTrigger value="all">الكل</TabsTrigger>
-                <TabsTrigger value="transfers">التحويلات</TabsTrigger>
-                <TabsTrigger value="consultations">الاستشارات</TabsTrigger>
-                {doctor && <TabsTrigger value="withdrawals">السحب</TabsTrigger>}
-              </TabsList>
-
-              <TabsContent value="all">
-                <div className="space-y-3">
-                  {transactions.map((t) => renderTxItem(t))}
-                  {transactions.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد عمليات بعد</p>}
-                </div>
-              </TabsContent>
-              <TabsContent value="transfers">
-                <div className="space-y-3">
-                  {transactions.filter(t => t.type === 'transfer').map((t) => renderTxItem(t))}
-                  {transactions.filter(t => t.type === 'transfer').length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد تحويلات</p>}
-                </div>
-              </TabsContent>
-              <TabsContent value="consultations">
-                <div className="space-y-3">
-                  {transactions.filter(t => t.type === 'consultation').map((t) => renderTxItem(t))}
-                  {transactions.filter(t => t.type === 'consultation').length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد استشارات</p>}
-                </div>
-              </TabsContent>
-              {doctor && (
-                <TabsContent value="withdrawals">
-                  <div className="space-y-3">
-                    {withdrawRequests.map((r) => (
-                      <div key={r.id} className="p-3 bg-secondary rounded-xl flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">الصافي: {r.net_amount} ج</p>
-                          <p className="text-xs text-muted-foreground">العمولة: {r.commission} ج • {new Date(r.created_at).toLocaleDateString('ar-EG')}</p>
-                        </div>
-                        <span className={`text-sm font-semibold ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>{r.status}</span>
+            <div className="space-y-3">
+              {[
+                ...consultations.map((c: any) => ({
+                  kind: 'consultation' as const,
+                  id: c.id,
+                  created_at: c.created_at,
+                  amount: c.amount,
+                  doctor: c.doctors,
+                })),
+                ...depositRequests.map((d: any) => ({
+                  kind: 'deposit' as const,
+                  id: d.id,
+                  created_at: d.created_at,
+                  amount: d.amount,
+                  status: d.status,
+                })),
+              ]
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                    {item.kind === 'consultation' ? (
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={item.doctor?.image_url} />
+                        <AvatarFallback>{item.doctor?.doctor_name?.charAt(0) || 'د'}</AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">+
                       </div>
-                    ))}
-                    {withdrawRequests.length === 0 && (
-                      <p className="text-center text-muted-foreground py-6">لا توجد طلبات سحب</p>
                     )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">
+                          {item.kind === 'consultation' ? item.doctor?.doctor_name : 'إيداع'}
+                        </p>
+                        {item.kind === 'deposit' && (
+                          <Badge variant={item.status === 'approved' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'}>
+                            {item.status}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(item.created_at).toLocaleString('ar-EG')} • ID: {item.id}
+                      </p>
+                    </div>
+                    <div className="text-primary font-bold">
+                      {Number(item.amount).toFixed(2)} ج
+                    </div>
                   </div>
-                </TabsContent>
+                ))}
+              {consultations.length === 0 && depositRequests.length === 0 && (
+                <p className="text-center text-muted-foreground py-6">لا يوجد سجل بعد</p>
               )}
-            </Tabs>
+            </div>
           </CardContent>
         </Card>
-        )}
 
         
       </div>
