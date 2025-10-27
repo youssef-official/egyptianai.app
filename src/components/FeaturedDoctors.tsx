@@ -48,7 +48,7 @@ const FeaturedDoctors = () => {
               <div className="flex flex-col items-center text-center space-y-2">
                 <div className="relative">
                   <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-primary/30 shadow-inner">
-                    <AvatarImage src={doctor.image_url} alt={doctor.doctor_name} />
+                    <AvatarImage src={doctor.image_url || '/placeholder.svg'} alt={doctor.doctor_name} loading="lazy" className="object-cover" />
                     <AvatarFallback className="text-lg sm:text-xl bg-gradient-to-br from-primary to-primary-light text-white">
                       {doctor.doctor_name?.charAt(0) || "د"}
                     </AvatarFallback>
