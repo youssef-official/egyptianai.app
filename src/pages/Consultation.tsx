@@ -161,18 +161,17 @@ const Consultation = () => {
         )}
 
         <Card className="shadow-strong rounded-3xl overflow-hidden border-0">
-          <div className="bg-gradient-to-r from-primary to-primary-light p-6 text-white">
+          <div className="bg-gradient-to-br from-primary to-primary-light p-6 text-white">
             <div className="flex items-start gap-4">
-              <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                <AvatarImage src={doctor.image_url} />
+              <Avatar className="w-24 h-24 rounded-2xl ring-4 ring-white/60 shadow-glow overflow-hidden">
+                <AvatarImage src={doctor.image_url} className="object-cover" />
                 <AvatarFallback className="text-2xl bg-white text-primary">
                   {doctor.doctor_name?.charAt(0) || "د"}
                 </AvatarFallback>
               </Avatar>
-              
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-2xl font-bold">{doctor.doctor_name}</h1>
+                  <h1 className="text-2xl font-extrabold tracking-tight">{doctor.doctor_name}</h1>
                   {doctor.is_verified && (
                     <Badge className="bg-white text-primary">
                       <CheckCircle2 className="w-3 h-3 ml-1" />
@@ -180,12 +179,14 @@ const Consultation = () => {
                     </Badge>
                   )}
                 </div>
-                <p className="text-white/90 text-lg">{doctor.specialization_ar}</p>
-                <div className="flex items-center gap-4 mt-3 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Phone className="w-4 h-4" />
-                    {doctor.phone_number}
-                  </div>
+                <p className="text-white/90 text-sm md:text-base">{doctor.specialization_ar}</p>
+                <div className="flex items-center gap-4 mt-3 text-xs md:text-sm flex-wrap">
+                  {doctor.phone_number && (
+                    <div className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      {doctor.phone_number}
+                    </div>
+                  )}
                   {doctor.address && (
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
@@ -200,21 +201,21 @@ const Consultation = () => {
           <div className="p-6 space-y-6">
             <div>
               <h3 className="font-semibold text-lg mb-2">نبذة عن الطبيب</h3>
-              <p className="text-muted-foreground">{doctor.bio_ar || "لا توجد معلومات إضافية"}</p>
+              <p className="text-muted-foreground leading-7">{doctor.bio_ar || "لا توجد معلومات إضافية"}</p>
             </div>
 
-            <div className="bg-secondary p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-muted-foreground">سعر الاستشارة</span>
-                <span className="text-2xl font-bold text-primary">
-                  {doctor.consultation_fee || doctor.price} جنيه
-                </span>
+              <div className="bg-secondary p-4 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground">سعر الاستشارة</span>
+                  <span className="text-2xl font-extrabold text-primary">
+                    {doctor.consultation_fee || doctor.price} جنيه
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">رصيدك الحالي</span>
+                  <span className="font-semibold">{wallet?.balance?.toFixed(2)} جنيه</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">رصيدك الحالي</span>
-                <span className="font-semibold">{wallet?.balance?.toFixed(2)} جنيه</span>
-              </div>
-            </div>
 
             {transactionId && (
               <Alert className="bg-green-50 border-green-200">

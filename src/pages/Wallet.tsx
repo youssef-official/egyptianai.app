@@ -212,8 +212,8 @@ const Wallet = () => {
                 .map((item) => (
                   <div key={item.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
                     {item.kind === 'consultation' ? (
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={item.doctor?.image_url} />
+                      <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+                        <AvatarImage src={item.doctor?.image_url} alt={item.doctor?.doctor_name || 'دكتور'} className="object-cover" />
                         <AvatarFallback>{item.doctor?.doctor_name?.charAt(0) || 'د'}</AvatarFallback>
                       </Avatar>
                     ) : (
