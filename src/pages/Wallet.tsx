@@ -206,11 +206,7 @@ const Wallet = () => {
   };
 
   const handleDepositClick = () => {
-    setShowDeposit(true);
-    requestAnimationFrame(() => {
-      const el = document.getElementById('deposit-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    navigate('/deposit');
   };
 
   return (
@@ -274,150 +270,9 @@ const Wallet = () => {
           </CardContent>
         </Card>
 
-        {depositRequests
-          .filter((req) => req.admin_notes && req.status !== "pending")
-          .map((req) => (
-            <Alert key={req.id} className="mb-4 bg-blue-50 border-blue-200 animate-fade-in">
-              <AlertDescription className="text-blue-900">
-                <p className="font-semibold mb-1">ملاحظة من الإدارة:</p>
-                <p className="text-sm">{req.admin_notes}</p>
-                <p className="text-xs mt-2 text-blue-700">
-                  المبلغ: {req.amount} جنيه -{" "}
-                  {new Date(req.created_at).toLocaleDateString("ar-EG")}
-                </p>
-              </AlertDescription>
-            </Alert>
-          ))}
+        {/* ملاحظات الإيداع أصبحت في صفحة /deposit */}
 
-        {showDeposit && (
-        <Card id="deposit-section" className="shadow-strong animate-fade-in rounded-3xl border-0">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2">
-              <WalletIcon className="w-5 h-5" />
-              إيداع رصيد
-            </CardTitle>
-            <CardDescription className="text-white/90">
-              الرصيد الحالي: {wallet?.balance?.toFixed(2) || 0} جنيه
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="amount">المبلغ (جنيه)</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100"
-                  required
-                  className="text-right"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="method">طريقة الدفع</Label>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={setPaymentMethod}
-                  required
-                >
-                  <SelectTrigger className="text-right">
-                    <SelectValue placeholder="اختر طريقة الدفع..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vodafone">Vodafone Cash</SelectItem>
-                    <SelectItem value="etisalat">Etisalat Cash</SelectItem>
-                    <SelectItem value="telda">Telda</SelectItem>
-                    <SelectItem value="instapay">InstaPay</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {paymentMethod && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right space-y-2">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={paymentDetails[paymentMethod].icon}
-                      alt={paymentDetails[paymentMethod].name}
-                      className="w-8 h-8 rounded-full"
-                    />
-                    <h3 className="font-semibold text-blue-900">
-                      {paymentDetails[paymentMethod].name}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center justify-between bg-white p-3 rounded-md border">
-                    <span className="font-mono text-blue-800">
-                      {paymentDetails[paymentMethod].number}
-                    </span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCopy(paymentDetails[paymentMethod].number)}
-                      className="flex items-center gap-1"
-                    >
-                      <Copy className="w-4 h-4" /> نسخ
-                    </Button>
-                  </div>
-
-                  <p className="text-sm text-blue-800 whitespace-pre-line">
-                    {paymentDetails[paymentMethod].note}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="proof">إثبات الدفع (صورة)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors" aria-describedby={undefined}>
-                  <Input
-                    id="proof"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setProofImage(e.target.files?.[0] || null)
-                    }
-                    className="hidden"
-                    required
-                  />
-                  <label
-                    htmlFor="proof"
-                    className="cursor-pointer flex flex-col items-center gap-2"
-                  >
-                    <Upload className="w-8 h-8 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {proofImage
-                        ? proofImage.name
-                        : "اضغط لرفع صورة إثبات الدفع"}
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="bg-secondary p-4 rounded-lg space-y-2">
-                <h3 className="font-semibold">ملاحظات هامة:</h3>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• سيتم مراجعة طلبك خلال 24 ساعة</li>
-                  <li>• تأكد من رفع صورة واضحة لإثبات الدفع</li>
-                  <li>• 1 جنيه = 1 نقطة</li>
-                </ul>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-r from-primary to-primary-light"
-                disabled={loading}
-              >
-                {loading ? "جاري الإرسال..." : "إرسال طلب الإيداع"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        )}
+        {/* نموذج الإيداع أزيل من المحفظة وانتقل إلى /deposit */}
 
         {/* Recent Payments */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
