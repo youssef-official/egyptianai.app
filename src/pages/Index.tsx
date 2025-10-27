@@ -154,7 +154,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {recentConsultations.map((consultation) => (
-                <div key={consultation.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/5 to-primary-light/5 rounded-2xl hover:shadow-medium transition-all">
+                <div key={consultation.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-2xl hover:shadow-strong transition-all border border-primary/20">
                   <Avatar className="w-12 h-12 border-2 border-primary/20">
                     <AvatarImage src={consultation.doctors?.image_url} />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
@@ -164,7 +164,7 @@ const Index = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold truncate">{consultation.doctors?.doctor_name}</p>
-                      <Badge variant="secondary" className="text-xs">{consultation.medical_departments?.name_ar}</Badge>
+                      <Badge variant="default" className="text-[10px]">{consultation.medical_departments?.name_ar}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{consultation.doctors?.specialization_ar}</p>
                     <div className="flex items-center gap-2 mt-1">

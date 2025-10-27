@@ -22,6 +22,7 @@ const DoctorDashboard = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchKind, setSearchKind] = useState<"transaction" | "withdraw" | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -143,26 +144,41 @@ const DoctorDashboard = () => {
   const handleSearch = async () => {
     if (!searchId) return;
 
-    const { data, error } = await supabase
+    const id = searchId.trim().toUpperCase();
+
+    // Try transactions first (consultation/transfer)
+    const { data: tx } = await supabase
       .from("transactions")
       .select("*, profiles(*)")
-      .eq("id", searchId.toUpperCase())
-      .single();
+      .eq("id", id)
+      .maybeSingle();
 
-    if (error || !data) {
-      toast({
-        title: "غير موجود",
-        description: "لم يتم العثور على العملية",
-        variant: "destructive",
-      });
-      setSearchResult(null);
-    } else {
-      setSearchResult(data);
-      toast({
-        title: "تم العثور!",
-        description: "تم العثور على العملية",
-      });
+    if (tx) {
+      setSearchKind("transaction");
+      setSearchResult(tx);
+      toast({ title: "تم العثور!", description: "تم العثور على العملية" });
+      return;
     }
+
+    // Try withdraw requests (limited to current doctor)
+    if (doctor) {
+      const { data: wd } = await supabase
+        .from("withdraw_requests")
+        .select("*")
+        .eq("id", id)
+        .eq("doctor_id", doctor.id)
+        .maybeSingle();
+      if (wd) {
+        setSearchKind("withdraw");
+        setSearchResult(wd);
+        toast({ title: "تم العثور!", description: "تم العثور على طلب السحب" });
+        return;
+      }
+    }
+
+    setSearchKind(null);
+    setSearchResult(null);
+    toast({ title: "غير موجود", description: "لم يتم العثور على العملية", variant: "destructive" });
   };
 
   const handleWithdraw = async () => {
@@ -511,10 +527,25 @@ const DoctorDashboard = () => {
             </div>
             {searchResult && (
               <div className="mt-4 p-4 bg-secondary rounded-lg">
-                <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
-                <p><strong>المبلغ:</strong> {searchResult.amount} جنيه</p>
-                <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
-                <p><strong>الوصف:</strong> {searchResult.description}</p>
+                {searchKind === 'transaction' && (
+                  <>
+                    <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
+                    <p><strong>المبلغ:</strong> {searchResult.amount} جنيه</p>
+                    <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
+                    {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
+                  </>
+                )}
+                {searchKind === 'withdraw' && (
+                  <>
+                    <p><strong>نوع:</strong> طلب سحب</p>
+                    <p><strong>الإجمالي:</strong> {searchResult.amount} جنيه</p>
+                    <p><strong>الصافي:</strong> {searchResult.net_amount} جنيه</p>
+                    <p><strong>العمولة:</strong> {searchResult.commission} جنيه</p>
+                    <p><strong>الحالة:</strong> {searchResult.status}</p>
+                    <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
+                    {searchResult.admin_notes && <p><strong>ملاحظات الإدارة:</strong> {searchResult.admin_notes}</p>}
+                  </>
+                )}
               </div>
             )}
           </CardContent>

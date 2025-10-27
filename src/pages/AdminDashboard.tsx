@@ -25,6 +25,7 @@ const AdminDashboard = () => {
   const [selectedImage, setSelectedImage] = useState("");
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchKind, setSearchKind] = useState<"transaction" | "deposit" | "withdraw" | "consultation" | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -370,26 +371,64 @@ const AdminDashboard = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    const id = searchId.trim();
+
+    // Try transactions (consultations/transfers)
+    const { data: tx } = await supabase
       .from("transactions")
       .select("*, profiles(full_name, avatar_url, phone), doctors(*, medical_departments(*))")
-      .eq("id", searchId.toUpperCase())
+      .eq("id", id.toUpperCase())
       .maybeSingle();
 
-    if (error || !data) {
-      toast({
-        title: "غير موجود",
-        description: "لم يتم العثور على العملية",
-        variant: "destructive",
-      });
-      setSearchResult(null);
-    } else {
-      setSearchResult(data);
-      toast({
-        title: "تم العثور!",
-        description: "تم العثور على العملية بنجاح",
-      });
+    if (tx) {
+      setSearchKind("transaction");
+      setSearchResult(tx);
+      toast({ title: "تم العثور!", description: "تم العثور على العملية" });
+      return;
     }
+
+    // Try deposit requests
+    const { data: dep } = await supabase
+      .from("deposit_requests")
+      .select("*, profiles(full_name, avatar_url, phone, email)")
+      .eq("id", id)
+      .maybeSingle();
+    if (dep) {
+      setSearchKind("deposit");
+      setSearchResult(dep);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب الإيداع" });
+      return;
+    }
+
+    // Try withdraw requests
+    const { data: wd } = await supabase
+      .from("withdraw_requests")
+      .select("*, doctors(*, medical_departments(*))")
+      .eq("id", id)
+      .maybeSingle();
+    if (wd) {
+      setSearchKind("withdraw");
+      setSearchResult(wd);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب السحب" });
+      return;
+    }
+
+    // Try consultations table
+    const { data: cons } = await supabase
+      .from("consultations")
+      .select("*, doctors(*, medical_departments(*)), profiles(full_name, avatar_url, phone)")
+      .eq("id", id.toUpperCase())
+      .maybeSingle();
+    if (cons) {
+      setSearchKind("consultation");
+      setSearchResult(cons);
+      toast({ title: "تم العثور!", description: "تم العثور على الاستشارة" });
+      return;
+    }
+
+    setSearchKind(null);
+    setSearchResult(null);
+    toast({ title: "غير موجود", description: "لم يتم العثور على أي نتيجة", variant: "destructive" });
   };
 
   return (
@@ -462,15 +501,29 @@ const AdminDashboard = () => {
             {searchResult && (
               <div className="p-5 bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-2xl space-y-3 animate-fade-in border border-primary/20">
                 <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-primary">
-                    <AvatarImage src={searchResult.profiles?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
-                      {searchResult.profiles?.full_name?.charAt(0) || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
+                  {searchKind !== 'withdraw' && (
+                    <Avatar className="w-16 h-16 border-2 border-primary">
+                      <AvatarImage src={searchResult.profiles?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                        {searchResult.profiles?.full_name?.charAt(0) || 'م'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  {searchKind === 'withdraw' && (
+                    <Avatar className="w-16 h-16 border-2 border-primary">
+                      <AvatarImage src={searchResult.doctors?.image_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                        {searchResult.doctors?.doctor_name?.charAt(0) || 'د'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
-                    <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
+                    <h3 className="font-bold text-lg">
+                      {searchKind === 'withdraw' ? (searchResult.doctors?.doctor_name) : (searchResult.profiles?.full_name)}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      📱 {searchKind === 'withdraw' ? (searchResult.doctors?.phone_number || 'غير محدد') : (searchResult.profiles?.phone || 'غير محدد')}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -480,7 +533,9 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground">المبلغ</p>
-                    <p className="font-bold text-primary">{searchResult.amount} جنيه</p>
+                    <p className="font-bold text-primary">
+                      {searchKind === 'withdraw' ? `الإجمالي ${searchResult.amount} • الصافي ${searchResult.net_amount}` : searchResult.amount} جنيه
+                    </p>
                   </div>
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground">التاريخ</p>
@@ -494,10 +549,12 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground">النوع</p>
-                    <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
+                    <p className="font-bold">
+                      {searchKind === 'deposit' ? 'إيداع' : searchKind === 'withdraw' ? 'سحب' : searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}
+                    </p>
                   </div>
                 </div>
-                {searchResult.doctors && (
+                {searchResult.doctors && searchKind !== 'deposit' && (
                   <div className="bg-background p-3 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar className="w-12 h-12 border-2 border-primary/20">
@@ -517,6 +574,11 @@ const AdminDashboard = () => {
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground text-sm">الوصف</p>
                     <p className="font-medium">{searchResult.description}</p>
+                  </div>
+                )}
+                {searchKind && (
+                  <div className="text-xs text-muted-foreground">
+                    نوع النتيجة: {searchKind}
                   </div>
                 )}
               </div>

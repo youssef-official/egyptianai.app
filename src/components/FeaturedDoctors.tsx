@@ -38,16 +38,16 @@ const FeaturedDoctors = () => {
   return (
     <div className="mb-8 animate-fade-in">
       <h2 className="text-2xl font-bold mb-4 text-foreground">⭐ أبرز الأطباء الموثقين</h2>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {doctors.map((doctor) => (
           <Card 
             key={doctor.id} 
-            className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer"
+            className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer bg-gradient-to-b from-background to-primary/5"
           >
             <CardContent className="p-3">
               <div className="flex flex-col items-center text-center space-y-2">
                 <div className="relative">
-                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-primary/20">
+                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-primary/30 shadow-inner">
                     <AvatarImage src={doctor.image_url} alt={doctor.doctor_name} />
                     <AvatarFallback className="text-lg sm:text-xl bg-gradient-to-br from-primary to-primary-light text-white">
                       {doctor.doctor_name?.charAt(0) || "د"}
@@ -57,17 +57,22 @@ const FeaturedDoctors = () => {
                     <img 
                       src={verifiedBadge} 
                       alt="موثق" 
-                      className="w-4 h-4 sm:w-5 sm:h-5 absolute top-0 right-0 -translate-y-1 translate-x-1"
+                      className="w-5 h-5 sm:w-6 sm:h-6 absolute -top-1 -right-1 drop-shadow-md"
                     />
                   )}
                 </div>
                 <div className="w-full">
-                  <h3 className="font-bold text-xs sm:text-sm line-clamp-1">{doctor.doctor_name}</h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">{doctor.specialization_ar}</p>
+                  <h3 className="font-bold text-sm sm:text-base line-clamp-1">{doctor.doctor_name}</h3>
+                  <p className="text-[11px] sm:text-sm text-muted-foreground line-clamp-1">{doctor.specialization_ar}</p>
                 </div>
-                <Badge variant="secondary" className="text-[10px] sm:text-xs px-2 py-0.5">
-                  {doctor.consultation_fee} ج
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs px-2 py-0.5">
+                    {doctor.consultation_fee} ج
+                  </Badge>
+                  <Badge variant="default" className="text-[10px] sm:text-xs px-2 py-0.5">
+                    موثق
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
