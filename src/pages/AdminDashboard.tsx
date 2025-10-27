@@ -920,9 +920,17 @@ const AdminDashboard = () => {
               <Card key={user.id} className="shadow-medium rounded-3xl border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{user.full_name}</CardTitle>
-                      <CardDescription className="text-xs">{user.phone}</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                          {user.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-lg">{user.full_name}</CardTitle>
+                        <CardDescription className="text-xs">{user.phone}</CardDescription>
+                      </div>
                     </div>
                     <Badge variant={user.user_type === 'doctor' ? 'default' : 'secondary'}>
                       {user.user_type}
