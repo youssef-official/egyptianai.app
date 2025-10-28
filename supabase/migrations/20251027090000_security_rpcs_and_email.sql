@@ -37,11 +37,19 @@ BEGIN
   END IF;
 END $$;
 
-CREATE POLICY IF NOT EXISTS "Users/admins can update wallet"
-ON public.wallets
-FOR UPDATE
-USING (user_id = auth.uid() OR has_role(auth.uid(), 'admin'))
-WITH CHECK (user_id = auth.uid() OR has_role(auth.uid(), 'admin'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'wallets' AND policyname = 'Users/admins can update wallet'
+  ) THEN
+    CREATE POLICY "Users/admins can update wallet"
+    ON public.wallets
+    FOR UPDATE
+    USING (user_id = auth.uid() OR has_role(auth.uid(), 'admin'))
+    WITH CHECK (user_id = auth.uid() OR has_role(auth.uid(), 'admin'));
+  END IF;
+END $$;
 
 -- Restrict doctor profile creation to approved requests only
 DO $$
@@ -66,11 +74,19 @@ WITH CHECK (
 );
 
 -- Allow admins to update doctors (e.g., toggle verification)
-CREATE POLICY IF NOT EXISTS "Admins can update doctors"
-ON public.doctors
-FOR UPDATE
-USING (has_role(auth.uid(), 'admin'))
-WITH CHECK (has_role(auth.uid(), 'admin'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'doctors' AND policyname = 'Admins can update doctors'
+  ) THEN
+    CREATE POLICY "Admins can update doctors"
+    ON public.doctors
+    FOR UPDATE
+    USING (has_role(auth.uid(), 'admin'))
+    WITH CHECK (has_role(auth.uid(), 'admin'));
+  END IF;
+END $$;
 
 -- Helper to generate operation ids
 CREATE OR REPLACE FUNCTION public.generate_op_id(prefix text)
@@ -191,13 +207,29 @@ CREATE TABLE IF NOT EXISTS public.doctor_reports (
 ALTER TABLE public.doctor_reports ENABLE ROW LEVEL SECURITY;
 
 -- Policies: user can insert, admins and doctor owner can read
-CREATE POLICY IF NOT EXISTS "Users can create reports"
-ON public.doctor_reports FOR INSERT
-WITH CHECK (reporter_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'doctor_reports' AND policyname = 'Users can create reports'
+  ) THEN
+    CREATE POLICY "Users can create reports"
+    ON public.doctor_reports FOR INSERT
+    WITH CHECK (reporter_id = auth.uid());
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Admins/owners can read reports"
-ON public.doctor_reports FOR SELECT
-USING (
-  has_role(auth.uid(), 'admin') OR 
-  doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid())
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'doctor_reports' AND policyname = 'Admins/owners can read reports'
+  ) THEN
+    CREATE POLICY "Admins/owners can read reports"
+    ON public.doctor_reports FOR SELECT
+    USING (
+      has_role(auth.uid(), 'admin') OR 
+      doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid())
+    );
+  END IF;
+END $$;

@@ -77,20 +77,20 @@ const Doctors = () => {
               العودة
             </Button>
           </div>
-
           <h1 className="text-3xl font-bold text-center mb-8">اختر التخصص الطبي</h1>
-
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {departments.map((dept) => (
               <Card
                 key={dept.id}
-                className="cursor-pointer hover:shadow-strong transition-all hover:-translate-y-1 animate-fade-in"
+                className="cursor-pointer rounded-2xl overflow-hidden border-0 shadow-medium bg-gradient-to-b from-background to-primary/5 hover:shadow-strong transition-all hover:scale-[1.02] animate-fade-in"
                 onClick={() => handleDepartmentClick(dept)}
               >
-                <CardHeader className="text-center">
-                  <div className="text-5xl mb-4">{dept.icon}</div>
-                  <CardTitle>{dept.name_ar}</CardTitle>
-                  <CardDescription>{dept.name_en}</CardDescription>
+                <CardHeader className="text-center p-5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-3 text-3xl">
+                    {dept.icon}
+                  </div>
+                  <CardTitle className="text-base">{dept.name_ar}</CardTitle>
+                  <CardDescription className="text-xs">{dept.name_en}</CardDescription>
                 </CardHeader>
               </Card>
             ))}

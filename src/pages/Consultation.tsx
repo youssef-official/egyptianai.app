@@ -183,14 +183,7 @@ const Consultation = () => {
           </Button>
         </div>
 
-        {lastTransaction && (
-          <Alert className="mx-4 md:mx-6 mb-6 bg-blue-50 border-blue-200">
-            <AlertDescription className="text-blue-900">
-              آخر استشارة كانت في:{" "}
-              {new Date(lastTransaction.created_at).toLocaleString("ar-EG")}
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* removed last consultation banner */}
 
         <section className="w-full bg-gradient-to-br from-primary to-primary-light text-white py-10 md:py-14 px-6">
           <div className="flex items-start gap-5 md:gap-6">

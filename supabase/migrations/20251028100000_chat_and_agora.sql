@@ -22,13 +22,21 @@ CREATE TABLE IF NOT EXISTS public.chat_sessions (
 ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Participants can view their sessions; admins too
-CREATE POLICY IF NOT EXISTS "Participants can view sessions"
-ON public.chat_sessions FOR SELECT
-USING (
-  user_id = auth.uid() OR 
-  doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid()) OR 
-  has_role(auth.uid(), 'admin')
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'chat_sessions' AND policyname = 'Participants can view sessions'
+  ) THEN
+    CREATE POLICY "Participants can view sessions"
+    ON public.chat_sessions FOR SELECT
+    USING (
+      user_id = auth.uid() OR 
+      doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid()) OR 
+      has_role(auth.uid(), 'admin')
+    );
+  END IF;
+END $$;
 
 -- Chat messages table
 CREATE TABLE IF NOT EXISTS public.chat_messages (
@@ -45,30 +53,46 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Participants can read/write messages in their session
-CREATE POLICY IF NOT EXISTS "Participants can read messages"
-ON public.chat_messages FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM public.chat_sessions s
-    WHERE s.id = session_id AND (
-      s.user_id = auth.uid() OR 
-      s.doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid()) OR 
-      has_role(auth.uid(), 'admin')
-    )
-  )
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'chat_messages' AND policyname = 'Participants can read messages'
+  ) THEN
+    CREATE POLICY "Participants can read messages"
+    ON public.chat_messages FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.chat_sessions s
+        WHERE s.id = session_id AND (
+          s.user_id = auth.uid() OR 
+          s.doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid()) OR 
+          has_role(auth.uid(), 'admin')
+        )
+      )
+    );
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Participants can insert messages"
-ON public.chat_messages FOR INSERT
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.chat_sessions s
-    WHERE s.id = session_id AND (
-      s.user_id = auth.uid() OR 
-      s.doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid())
-    )
-  )
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'chat_messages' AND policyname = 'Participants can insert messages'
+  ) THEN
+    CREATE POLICY "Participants can insert messages"
+    ON public.chat_messages FOR INSERT
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM public.chat_sessions s
+        WHERE s.id = session_id AND (
+          s.user_id = auth.uid() OR 
+          s.doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid())
+        )
+      )
+    );
+  END IF;
+END $$;
 
 -- Storage bucket for chat uploads (images/audio)
 INSERT INTO storage.buckets (id, name, public)
@@ -76,13 +100,29 @@ VALUES ('chat-uploads', 'chat-uploads', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Public read, authenticated write policy for chat-uploads
-CREATE POLICY IF NOT EXISTS "Public read chat uploads"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'chat-uploads');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public read chat uploads'
+  ) THEN
+    CREATE POLICY "Public read chat uploads"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'chat-uploads');
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Authenticated can upload chat files"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'chat-uploads' AND auth.role() = 'authenticated');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Authenticated can upload chat files'
+  ) THEN
+    CREATE POLICY "Authenticated can upload chat files"
+    ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'chat-uploads' AND auth.role() = 'authenticated');
+  END IF;
+END $$;
 
 -- Helper: generate id with prefix
 CREATE OR REPLACE FUNCTION public.generate_chat_id()
