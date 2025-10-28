@@ -36,6 +36,7 @@ const Consultation = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [transactionId, setTransactionId] = useState<string>("");
+  const [chatSessionId, setChatSessionId] = useState<string>("");
   const [reportText, setReportText] = useState("");
   const [lastTransaction, setLastTransaction] = useState<any>(null);
   const navigate = useNavigate();
@@ -98,10 +99,8 @@ const Consultation = () => {
       const txId = data?.[0]?.tx_id || "";
       setTransactionId(txId);
       await loadData();
-      toast({
-        title: "تم بدء الاستشارة!",
-        description: `معرف العملية: ${txId}`,
-      });
+      // Immediately navigate to chat page using the consultation id
+      navigate(`/chat?consultationId=${txId}&doctorId=${doctorId}`);
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -266,28 +265,7 @@ const Consultation = () => {
             </div>
           </div>
 
-          {transactionId && (
-            <Alert className="bg-green-50 border-green-200">
-              <AlertDescription className="text-green-900">
-                <div className="space-y-2">
-                  <p className="font-semibold">تم بدء الاستشارة بنجاح!</p>
-                  <p>معرف العملية: {transactionId}</p>
-                  <p>يمكنك التواصل مع الطبيب عبر الواتساب:</p>
-                  <a
-                    href={`https://wa.me/${doctor.whatsapp_number}?text=مرحباً، أنا ${
-                      user?.email || ""
-                    }، معرف العملية: ${transactionId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    فتح الواتساب
-                  </a>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Chat now handled in /chat page. No WhatsApp info displayed */}
 
           <div className="flex gap-3">
             <AlertDialog>

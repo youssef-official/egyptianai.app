@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Stethoscope, Wallet, Search, LogOut, TrendingUp, Plus, PauseCircle, PlayCircle } from "lucide-react";
+import { Stethoscope, Wallet, Search, LogOut, TrendingUp, Plus, PauseCircle, PlayCircle, Power } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -27,6 +27,7 @@ const DoctorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<any[]>([]);
   const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
+  const [isOnline, setIsOnline] = useState<boolean>(false);
   const [newRequest, setNewRequest] = useState({
     doctor_name: "",
     phone_number: "",
@@ -98,6 +99,7 @@ const DoctorDashboard = () => {
       .single();
 
     setDoctor(doctorData);
+    setIsOnline(!!doctorData?.is_online);
 
     // Get wallet
     const { data: walletData } = await supabase
@@ -345,6 +347,17 @@ const DoctorDashboard = () => {
     }
   };
 
+  const toggleOnline = async () => {
+    try {
+      const next = !isOnline;
+      await supabase.rpc('doctor_set_online', { _is_online: next });
+      setIsOnline(next);
+      toast({ title: next ? 'متصل الآن' : 'غير متصل' });
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -367,10 +380,16 @@ const DoctorDashboard = () => {
               <p className="text-sm text-muted-foreground">{doctor?.specialization_ar}</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            تسجيل خروج
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant={isOnline ? 'default' : 'outline'} onClick={toggleOnline} className="gap-2">
+              <Power className="w-4 h-4" />
+              {isOnline ? 'متصل' : 'غير متصل'}
+            </Button>
+            <Button variant="ghost" onClick={handleLogout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              تسجيل خروج
+            </Button>
+          </div>
         </div>
 
         {/* Admin Notes Alerts for Withdraw Requests */}

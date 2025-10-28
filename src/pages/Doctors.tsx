@@ -50,6 +50,8 @@ const Doctors = () => {
       .select("*, profiles(avatar_url)")
       .eq("department_id", deptId)
       .eq("is_active", true)
+      .eq('is_online', true)
+      .eq('is_busy', false)
       .order("is_verified", { ascending: false });
     
     setDoctors(data || []);
