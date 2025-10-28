@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Stethoscope, LogOut, Wallet as WalletIcon, Bot, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import FeaturedDoctors from "@/components/FeaturedDoctors";
+import BottomNav from "@/components/BottomNav";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -74,8 +75,8 @@ const Index = () => {
   }
 
   return (
-    <div>
-      <div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 animate-fade-in">
           <div className="flex items-center gap-3">
@@ -162,8 +163,8 @@ const Index = () => {
         </div>
 
         <FeaturedDoctors />
-        
       </div>
+      <BottomNav />
     </div>
   );
 };

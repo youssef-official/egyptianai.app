@@ -22,6 +22,8 @@ export default function Chat() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
+  const [callStatus, setCallStatus] = useState<'none'|'requested'|'accepted'|'rejected'>('none');
+  const [callType, setCallType] = useState<'audio'|'video'|null>(null);
   const [loading, setLoading] = useState(true);
 
   const localVideoRef = useRef<HTMLDivElement>(null);
@@ -53,10 +55,22 @@ export default function Chat() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `session_id=eq.${sessionId}` }, (payload) => {
         setMessages((prev) => [...prev, payload.new]);
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_sessions', filter: `id=eq.${sessionId}` }, (payload) => {
+        setCallStatus(payload.new.call_status);
+        setCallType(payload.new.call_type);
+      })
       .subscribe();
     (async () => {
-      const { data } = await supabase.from('chat_messages').select('*').eq('session_id', sessionId).order('created_at');
+      const [{ data }, { data: s }] = await Promise.all([
+        supabase.from('chat_messages').select('*').eq('session_id', sessionId).order('created_at'),
+        supabase.from('chat_sessions').select('call_status, call_type, status').eq('id', sessionId).maybeSingle(),
+      ]);
       setMessages(data || []);
+      if (s) {
+        setCallStatus(s.call_status || 'none');
+        setCallType((s.call_type as any) || null);
+        setStatus(s.status as any);
+      }
     })();
 
     return () => { supabase.removeChannel(channel); };
@@ -97,6 +111,8 @@ export default function Chat() {
   const sendMessage = async (type: 'text'|'image') => {
     if (!sessionId) return;
     if (type === 'text' && !text.trim()) return;
+    // Guard: only allow sending if session is active and doctor is online (status enforced server-side by RLS + session status)
+    if (status !== 'active') return;
     setSending(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -116,6 +132,7 @@ export default function Chat() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !sessionId) return;
+    if (status !== 'active') { e.currentTarget.value = ''; return; }
     const path = `${sessionId}/${Date.now()}_${file.name}`;
     const { data, error } = await supabase.storage.from('chat-uploads').upload(path, file);
     if (!error) {
@@ -123,6 +140,15 @@ export default function Chat() {
       await supabase.from('chat_messages').insert({ session_id: sessionId, role: 'user', type: 'image', attachment_url: url, sender_id: (await supabase.auth.getUser()).data.user!.id });
     }
     e.currentTarget.value = '';
+  };
+
+  const requestCall = async (type: 'audio'|'video') => {
+    if (!sessionId || status !== 'active') return;
+    try {
+      await supabase.rpc('user_request_call', { _session_id: sessionId, _call_type: type });
+      setCallStatus('requested');
+      setCallType(type);
+    } catch {}
   };
 
   const active = status === 'active';
@@ -141,15 +167,24 @@ export default function Chat() {
 
         <Card className="mb-3">
           <CardContent className="p-0">
-            <div className="h-[260px] grid grid-cols-2 gap-1 bg-black">
-              <div ref={localVideoRef} className="bg-black" />
-              <div ref={remoteVideoRef} className="bg-black" />
-            </div>
-            <div className="flex gap-2 p-3 border-t">
-              <Button size="sm" onClick={() => startRtc(true, false)} disabled={!active}><Mic className="w-4 h-4 ml-1"/>صوت</Button>
-              <Button size="sm" onClick={() => startRtc(true, true)} disabled={!active}><Video className="w-4 h-4 ml-1"/>فيديو</Button>
-              <Button size="sm" variant="destructive" onClick={stopRtc}><PhoneOff className="w-4 h-4 ml-1"/>إنهاء</Button>
-            </div>
+            {/* WhatsApp-like call request: show call area only when accepted */}
+            {callStatus === 'accepted' ? (
+              <>
+                <div className="h-[260px] grid grid-cols-2 gap-1 bg-black">
+                  <div ref={localVideoRef} className="bg-black" />
+                  <div ref={remoteVideoRef} className="bg-black" />
+                </div>
+                <div className="flex gap-2 p-3 border-t">
+                  <Button size="sm" onClick={() => startRtc(true, callType === 'video')} disabled={!active}><Mic className="w-4 h-4 ml-1"/>بدء {callType==='video'?'فيديو':'صوت'}</Button>
+                  {callType==='video' && <Button size="sm" onClick={() => startRtc(true, true)} disabled={!active}><Video className="w-4 h-4 ml-1"/>فيديو</Button>}
+                  <Button size="sm" variant="destructive" onClick={stopRtc}><PhoneOff className="w-4 h-4 ml-1"/>إنهاء</Button>
+                </div>
+              </>
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground border-t">
+                {callStatus === 'requested' ? 'تم إرسال طلب مكالمة للطبيب، في انتظار الموافقة' : 'يمكنك طلب مكالمة صوتية أو فيديو مع الطبيب'}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -171,6 +206,10 @@ export default function Chat() {
               </label>
               <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="اكتب رسالتك..." className="text-right" onKeyDown={(e)=>{ if(e.key==='Enter'){ sendMessage('text'); } }} />
               <Button onClick={() => sendMessage('text')} disabled={sending || !text.trim()}>{sending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4"/>}</Button>
+              <div className="ml-auto flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => requestCall('audio')} disabled={status!=='active' || callStatus==='requested'}><Mic className="w-4 h-4 ml-1"/>طلب صوت</Button>
+                <Button variant="outline" size="sm" onClick={() => requestCall('video')} disabled={status!=='active' || callStatus==='requested'}><Video className="w-4 h-4 ml-1"/>طلب فيديو</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
