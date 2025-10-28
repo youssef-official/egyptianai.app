@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Stethoscope, Mail, Lock, User, Phone, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showExtraFields, setShowExtraFields] = useState(false);
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -98,10 +100,10 @@ const Auth = () => {
             <Stethoscope className="w-14 h-14 text-white" />
           </div>
           <CardTitle className="text-3xl font-extrabold text-foreground">
-            {isLogin ? "مرحبًا بعودتك" : "أنشئ حسابك"}
+            {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground">
-            {isLogin ? "سجل دخولك للمتابعة" : "املأ البيانات التالية"}
+            {isLogin ? t('auth.login') : t('auth.signup')}
           </CardDescription>
         </CardHeader>
 
@@ -110,7 +112,7 @@ const Auth = () => {
             <div className="space-y-3">
               <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold">
                 <Mail className="w-4 h-4" />
-                البريد الإلكتروني
+                {t('auth.email')}
               </Label>
               <Input
                 id="email"
@@ -126,7 +128,7 @@ const Auth = () => {
             <div className="space-y-3">
               <Label htmlFor="password" className="flex items-center gap-2 text-sm font-semibold">
                 <Lock className="w-4 h-4" />
-                كلمة المرور
+                {t('auth.password')}
               </Label>
               <Input
                 id="password"
@@ -216,7 +218,7 @@ const Auth = () => {
               {loading ? (
                 <span className="inline-block w-6 h-6 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
               ) : (
-                isLogin ? "تسجيل الدخول" : "إنشاء حساب"
+                isLogin ? t('auth.login') : t('auth.signup')
               )}
             </Button>
 
@@ -233,7 +235,7 @@ const Auth = () => {
                 }
               }}
             >
-              {isLogin ? "ليس لديك حساب؟ أنشئ حساباً" : "لديك حساب؟ سجل دخولك"}
+              {isLogin ? t('auth.noAccount') : t('auth.haveAccount')}
             </Button>
           </form>
         </CardContent>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Stethoscope, LogOut, Wallet as WalletIcon, Bot, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import BottomNav from "@/components/BottomNav";
 import FeaturedDoctors from "@/components/FeaturedDoctors";
 
@@ -15,6 +16,7 @@ const Index = () => {
   const [wallet, setWallet] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     checkUser();
@@ -102,27 +104,27 @@ const Index = () => {
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-6">
             <div className="flex items-center gap-3 text-lg font-semibold">
               <WalletIcon className="w-6 h-6" />
-              محفظتي
+              {t('index.myWallet')}
             </div>
           </CardHeader>
           <CardContent className="pt-8 pb-8">
             <div className="text-center space-y-6">
               <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl text-muted-foreground">نقطة</span>
+                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl text-muted-foreground">{t('common.points')}</span>
               </div>
               <div className="flex gap-4 justify-center">
                 <Button 
                   className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-2xl h-12 px-8 font-semibold"
                   onClick={() => navigate("/transfer")}
                 >
-                  تحويل
+                  {t('common.transfer')}
                 </Button>
                 <Button 
                   variant="outline"
                   className="rounded-2xl h-12 px-8 font-semibold border-2"
                   onClick={() => navigate("/wallet")}
                 >
-                  فتح المحفظة
+                  {t('index.openWallet')}
                 </Button>
               </div>
             </div>

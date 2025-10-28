@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { useTranslation } from "react-i18next";
 
 const Transfer = () => {
   const [receiverId, setReceiverId] = useState("");
@@ -16,6 +17,7 @@ const Transfer = () => {
   const [wallet, setWallet] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadWallet();
@@ -88,8 +90,8 @@ const Transfer = () => {
       const transactionId = rpcData?.[0]?.tx_id || '';
 
       toast({
-        title: "تم التحويل!",
-        description: `تم تحويل ${transferAmount} نقطة بنجاح`,
+        title: t('common.transfer'),
+        description: `${t('common.transfer')}: ${transferAmount} ${t('common.points')}`,
       });
 
       setReceiverId("");
@@ -112,7 +114,7 @@ const Transfer = () => {
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
             <ArrowRight className="w-4 h-4" />
-            العودة
+            {t('common.back')}
           </Button>
         </div>
 
@@ -120,17 +122,17 @@ const Transfer = () => {
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
             <CardTitle className="flex items-center gap-2">
               <ArrowRightLeft className="w-5 h-5" />
-              تحويل رصيد
+              {t('transfer.title')}
             </CardTitle>
             <CardDescription className="text-white/90">
-              الرصيد الحالي: {wallet?.balance?.toFixed(0)} نقطة
+              {t('transfer.current')}: {wallet?.balance?.toFixed(0)} {t('common.points')}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="pt-6">
             <form onSubmit={handleTransfer} className="space-y-6">
               <div className="space-y-2">
-              <Label htmlFor="receiverId">معرّف المستقبل (User ID)</Label>
+                <Label htmlFor="receiverId">User ID</Label>
                 <Input
                   id="receiverId"
                   type="text"
@@ -146,7 +148,7 @@ const Transfer = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">النقاط</Label>
+                <Label htmlFor="amount">{t('transfer.amountPts')}</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -161,7 +163,7 @@ const Transfer = () => {
               </div>
 
               <div className="bg-secondary p-4 rounded-lg space-y-2">
-                <h3 className="font-semibold">ملاحظات هامة:</h3>
+                <h3 className="font-semibold">{t('common.language')}</h3>
                 <ul className="text-sm space-y-1 text-muted-foreground">
                   <li>• تأكد من صحة معرف المستقبل قبل التحويل</li>
                   <li>• التحويل لا يمكن إلغاؤه بعد التأكيد</li>
@@ -174,7 +176,7 @@ const Transfer = () => {
                 className="w-full bg-gradient-to-r from-primary to-primary-light"
                 disabled={loading}
               >
-                {loading ? "جاري التحويل..." : "تحويل الرصيد"}
+                {loading ? "..." : t('transfer.submit')}
               </Button>
             </form>
           </CardContent>

@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 // no alerts in wallet after moving deposit page
 
 const Wallet = () => {
@@ -32,6 +33,7 @@ const Wallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const historyRef = useRef<HTMLDivElement | null>(null);
+  const { t } = useTranslation();
 
   // deposit payment details moved to Deposit page
 
@@ -149,7 +151,7 @@ const Wallet = () => {
         <Card className="shadow-strong rounded-3xl border-0 mb-6 bg-white/80 backdrop-blur">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground">رصيد الحساب</span>
+              <span className="text-sm text-muted-foreground">{t('wallet.accountBalance')}</span>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowBalance(!showBalance)}>
                 {showBalance ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
@@ -159,7 +161,7 @@ const Wallet = () => {
                 <div className="w-28 h-28 rounded-full border-8 border-primary/20 flex items-center justify-center animate-pulse-glow">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-primary">{showBalance ? (wallet?.balance?.toFixed(0) || '0') : '•••••'}</div>
-                    <div className="text-xs text-muted-foreground">نقطة</div>
+                    <div className="text-xs text-muted-foreground">{t('common.points')}</div>
                   </div>
                 </div>
                 <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(var(--primary) 360deg, transparent 0)' }} />
@@ -170,19 +172,19 @@ const Wallet = () => {
                   <Button onClick={handleDepositClick} className="rounded-full h-12 w-12 flex items-center justify-center shadow-medium bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white">
                     <Plus className="w-5 h-5" />
                   </Button>
-                  <span className="text-xs mt-2">إيداع</span>
+                  <span className="text-xs mt-2">{t('common.deposit')}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <Button onClick={() => navigate('/transfer')} variant="outline" className="rounded-full h-12 w-12 flex items-center justify-center bg-white">
                     <ArrowRightLeft className="w-5 h-5" />
                   </Button>
-                  <span className="text-xs mt-2">تحويل</span>
+                  <span className="text-xs mt-2">{t('common.transfer')}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <Button onClick={() => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} variant="secondary" className="rounded-full h-12 w-12 flex items-center justify-center">
                     <History className="w-5 h-5" />
                   </Button>
-                  <span className="text-xs mt-2">السجل</span>
+                  <span className="text-xs mt-2">{t('common.history')}</span>
                 </div>
               </div>
             </div>
@@ -196,9 +198,9 @@ const Wallet = () => {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              السجل
+              {t('wallet.latest')}
             </CardTitle>
-            <CardDescription>آخر الاستشارات وعمليات الإيداع</CardDescription>
+            <CardDescription>{t('wallet.recent')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

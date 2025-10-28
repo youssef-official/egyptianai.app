@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Home, Stethoscope, Wallet, User, Shield } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 interface NavItemProps {
   icon: any;
@@ -33,6 +35,7 @@ const BottomNav = () => {
   const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [userRoles, setUserRoles] = useState<any[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadUserData();
@@ -62,17 +65,19 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t shadow-strong z-50 safe-area-bottom">
-      <div className="flex justify-around items-center h-20 max-w-md mx-auto px-6">
+      <div className="flex justify-between items-center h-20 max-w-md mx-auto px-4">
+        <LanguageSwitcher />
+        <div className="flex-1 flex justify-around">
         <NavItem
           icon={Home}
-          label="الرئيسية"
+          label={t('common.home')}
           to="/"
           isActive={location.pathname === "/"}
         />
         {!isDoctor && (
           <NavItem
             icon={Stethoscope}
-            label="الأطباء"
+            label={t('common.doctors')}
             to="/doctors"
             isActive={location.pathname === "/doctors"}
           />
@@ -80,25 +85,26 @@ const BottomNav = () => {
         {!isDoctor && (
           <NavItem
             icon={Wallet}
-            label="المحفظة"
+            label={t('common.wallet')}
             to="/wallet"
             isActive={location.pathname === "/wallet"}
           />
         )}
         <NavItem
           icon={User}
-          label="حسابي"
+          label={t('common.profile')}
           to="/profile"
           isActive={location.pathname === "/profile"}
         />
         {isDoctor && (
           <NavItem
             icon={Stethoscope}
-            label="لوحتي"
+            label={t('common.myPanel')}
             to="/doctor-dashboard"
             isActive={location.pathname === "/doctor-dashboard"}
           />
         )}
+        </div>
       </div>
     </nav>
   );

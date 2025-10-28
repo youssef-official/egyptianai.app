@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Copy, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const paymentDetails: any = {
   vodafone: {
@@ -43,6 +44,7 @@ const Deposit = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     (async () => {
@@ -92,18 +94,18 @@ const Deposit = () => {
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate("/wallet")} className="gap-2">
             <ArrowRight className="w-4 h-4" />
-            العودة للمحفظة
+            {t('common.back')}
           </Button>
         </div>
         <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
-            <CardTitle>إيداع النقاط</CardTitle>
-            <CardDescription className="text-white/90">اختر الطريقة وأرفق إثبات الدفع</CardDescription>
+            <CardTitle>{t('deposit.title')}</CardTitle>
+            <CardDescription className="text-white/90">{t('deposit.chooseAndUpload')}</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="amount">عدد النقاط</Label>
+                <Label htmlFor="amount">{t('deposit.amountPts')}</Label>
                 <Input id="amount" type="number" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" required className="text-right" />
               </div>
               <div className="space-y-2">
@@ -146,7 +148,7 @@ const Deposit = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary-light" disabled={loading}>
-                {loading ? "جاري الإرسال..." : "إرسال طلب الإيداع"}
+                {loading ? "..." : t('deposit.submit')}
               </Button>
             </form>
           </CardContent>
