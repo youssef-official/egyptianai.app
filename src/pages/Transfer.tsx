@@ -89,7 +89,7 @@ const Transfer = () => {
 
       toast({
         title: "تم التحويل!",
-        description: `تم تحويل ${transferAmount} جنيه بنجاح`,
+        description: `تم تحويل ${transferAmount} نقطة بنجاح`,
       });
 
       setReceiverId("");
@@ -123,7 +123,7 @@ const Transfer = () => {
               تحويل رصيد
             </CardTitle>
             <CardDescription className="text-white/90">
-              الرصيد الحالي: {wallet?.balance?.toFixed(2)} جنيه
+              الرصيد الحالي: {wallet?.balance?.toFixed(0)} نقطة
             </CardDescription>
           </CardHeader>
 
@@ -146,15 +146,15 @@ const Transfer = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">المبلغ (جنيه)</Label>
+                <Label htmlFor="amount">النقاط</Label>
                 <Input
                   id="amount"
                   type="number"
                   min="1"
-                  step="0.01"
+                  step="1"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
+                  placeholder="0"
                   required
                   className="text-right"
                 />
@@ -165,7 +165,7 @@ const Transfer = () => {
                 <ul className="text-sm space-y-1 text-muted-foreground">
                   <li>• تأكد من صحة معرف المستقبل قبل التحويل</li>
                   <li>• التحويل لا يمكن إلغاؤه بعد التأكيد</li>
-                  <li>• يجب أن يكون لديك رصيد كافٍ</li>
+                  <li>• يجب أن يكون لديك نقاط كافية</li>
                 </ul>
               </div>
 

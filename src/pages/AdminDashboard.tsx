@@ -421,7 +421,7 @@ const AdminDashboard = () => {
             <CardContent className="pt-6 text-center">
               <DollarSign className="w-8 h-8 mx-auto mb-2 text-primary" />
               <div className="text-lg font-bold">{stats.totalBalance.toFixed(0)}</div>
-              <p className="text-xs text-muted-foreground">رصيد</p>
+              <p className="text-xs text-muted-foreground">نقاط</p>
             </CardContent>
           </Card>
           <Card className="shadow-medium rounded-3xl border-0">
@@ -477,7 +477,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground">المبلغ</p>
-                    <p className="font-bold text-primary">{searchResult.amount} جنيه</p>
+                    <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
                   </div>
                   <div className="bg-background p-3 rounded-lg">
                     <p className="text-muted-foreground">التاريخ</p>
@@ -645,7 +645,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-2xl font-bold text-primary">{req.amount} جنيه</div>
+                  <div className="text-2xl font-bold text-primary">{req.amount} نقطة</div>
                   
                   <Dialog>
                     <DialogTrigger asChild>
@@ -783,9 +783,9 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <div className="text-sm text-muted-foreground">المبلغ الإجمالي: {req.amount} جنيه</div>
-                    <div className="text-sm text-muted-foreground">العمولة (10%): {req.commission} جنيه</div>
-                    <div className="text-2xl font-bold text-primary">الصافي: {req.net_amount} جنيه</div>
+                    <div className="text-sm text-muted-foreground">إجمالي النقاط: {req.amount}</div>
+                    <div className="text-sm text-muted-foreground">العمولة (10%): {req.commission}</div>
+                    <div className="text-2xl font-bold text-primary">الصافي: {req.net_amount} نقطة</div>
                   </div>
 
                   {req.status === 'pending' && (
@@ -853,7 +853,7 @@ const AdminDashboard = () => {
                         رقم التليفون: {doctor.phone_number || 'غير محدد'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        السعر: {doctor.consultation_fee || 0} جنيه • العنوان: {doctor.address || 'غير محدد'}
+                        السعر: {doctor.consultation_fee || 0} نقطة • العنوان: {doctor.address || 'غير محدد'}
                       </p>
                     </div>
                     <Badge variant="default">نشط</Badge>
@@ -884,7 +884,7 @@ const AdminDashboard = () => {
                         </div>
                         <p className="text-sm text-muted-foreground">{doctor.specialization_ar}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          السعر: {doctor.consultation_fee || 0} جنيه
+                          السعر: {doctor.consultation_fee || 0} نقطة
                         </p>
                         <Badge variant={doctor.is_active ? "default" : "secondary"} className="mt-2">
                           {doctor.is_active ? "نشط" : "غير نشط"}
@@ -940,7 +940,7 @@ const AdminDashboard = () => {
                 <CardContent>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">الرصيد:</span>
-                    <span className="font-bold text-primary">{user.wallets?.balance || 0} ج</span>
+                    <span className="font-bold text-primary">{user.wallets?.balance || 0} نقطة</span>
                   </div>
                 </CardContent>
               </Card>

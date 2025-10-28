@@ -108,7 +108,7 @@ const Index = () => {
           <CardContent className="pt-8 pb-8">
             <div className="text-center space-y-6">
               <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-xl text-muted-foreground">جنيه</span>
+                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl text-muted-foreground">نقطة</span>
               </div>
               <div className="flex gap-4 justify-center">
                 <Button 

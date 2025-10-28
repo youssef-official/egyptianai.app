@@ -77,7 +77,7 @@ const Consultation = () => {
     if (wallet.balance < doctor.consultation_fee) {
       toast({
         title: "رصيد غير كافي",
-        description: "يجب إضافة رصيد إلى محفظتك أولاً",
+        description: "يجب إضافة نقاط إلى محفظتك أولاً",
         variant: "destructive",
       });
       return;
@@ -278,12 +278,12 @@ const Consultation = () => {
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-muted-foreground">سعر الاستشارة</span>
                   <span className="font-bold text-2xl text-primary">
-                    {doctor.consultation_fee} جنيه
+                    {doctor.consultation_fee} نقطة
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-muted-foreground">رصيدك الحالي</span>
-                  <span className="font-semibold">{wallet?.balance?.toFixed(2)} جنيه</span>
+                  <span className="font-semibold">{wallet?.balance?.toFixed(0)} نقطة</span>
                 </div>
               </div>
             </div>
@@ -309,7 +309,7 @@ const Consultation = () => {
                       <AlertDialogDescription>
                         هل أنت متأكد من بدء الاستشارة مع الدكتور {doctor.doctor_name}؟
                         <br />
-                        سيتم خصم {doctor.consultation_fee} جنيه من محفظتك.
+                        سيتم خصم {doctor.consultation_fee} نقطة من محفظتك.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

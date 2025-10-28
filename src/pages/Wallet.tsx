@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { TrendingUp, Bell, User, Eye, EyeOff, Plus, Heart, ArrowRightLeft } from "lucide-react";
+import { TrendingUp, Bell, User, Eye, EyeOff, Plus, ArrowRightLeft, History } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { motion } from "framer-motion";
 // no alerts in wallet after moving deposit page
 
 const Wallet = () => {
@@ -30,6 +31,7 @@ const Wallet = () => {
   const [consultations, setConsultations] = useState<any[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const historyRef = useRef<HTMLDivElement | null>(null);
 
   // deposit payment details moved to Deposit page
 
@@ -121,10 +123,15 @@ const Wallet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-fuchsia-50 via-pink-50 to-white p-4 pb-24">
       <div className="container mx-auto max-w-2xl">
         {/* Header: greeting, profile icon (right) and notifications (left) */}
-        <div className="mb-6 flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="mb-6 flex items-center justify-between"
+        >
           <Bell className="w-5 h-5 text-muted-foreground" />
           <div className="flex items-center gap-2">
             <div className="text-right">
@@ -135,13 +142,14 @@ const Wallet = () => {
               <User className="w-5 h-5" />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Balance Circle + Quick Actions */}
-        <Card className="shadow-strong animate-fade-in rounded-3xl border-0 mb-6">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <Card className="shadow-strong rounded-3xl border-0 mb-6 bg-white/80 backdrop-blur">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground">الرصيد</span>
+              <span className="text-sm text-muted-foreground">رصيد الحساب</span>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowBalance(!showBalance)}>
                 {showBalance ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
@@ -150,8 +158,8 @@ const Wallet = () => {
               <div className="relative w-28 h-28">
                 <div className="w-28 h-28 rounded-full border-8 border-primary/20 flex items-center justify-center animate-pulse-glow">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{showBalance ? (wallet?.balance?.toFixed(2) || '0.00') : '•••••'}</div>
-                    <div className="text-xs text-muted-foreground">جنيه</div>
+                    <div className="text-3xl font-bold text-primary">{showBalance ? (wallet?.balance?.toFixed(0) || '0') : '•••••'}</div>
+                    <div className="text-xs text-muted-foreground">نقطة</div>
                   </div>
                 </div>
                 <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(var(--primary) 360deg, transparent 0)' }} />
@@ -159,30 +167,32 @@ const Wallet = () => {
               {/* Action buttons - three in a row */}
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div className="flex flex-col items-center">
-                  <Button onClick={handleDepositClick} className="rounded-full h-12 w-12 flex items-center justify-center shadow-medium">
+                  <Button onClick={handleDepositClick} className="rounded-full h-12 w-12 flex items-center justify-center shadow-medium bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white">
                     <Plus className="w-5 h-5" />
                   </Button>
-                  <span className="text-xs mt-2">شحن الرصيد</span>
+                  <span className="text-xs mt-2">إيداع</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <Button onClick={() => navigate('/transfer')} variant="outline" className="rounded-full h-12 w-12 flex items-center justify-center">
+                  <Button onClick={() => navigate('/transfer')} variant="outline" className="rounded-full h-12 w-12 flex items-center justify-center bg-white">
                     <ArrowRightLeft className="w-5 h-5" />
                   </Button>
                   <span className="text-xs mt-2">تحويل</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <Button onClick={() => navigate('/doctors')} variant="secondary" className="rounded-full h-12 w-12 flex items-center justify-center">
-                    <Heart className="w-5 h-5" />
+                  <Button onClick={() => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} variant="secondary" className="rounded-full h-12 w-12 flex items-center justify-center">
+                    <History className="w-5 h-5" />
                   </Button>
-                  <span className="text-xs mt-2">المفضلة</span>
+                  <span className="text-xs mt-2">السجل</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* سجل موحد للاستشارات والإيداعات */}
-        <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mt-6">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} ref={historyRef}>
+        <Card className="shadow-medium rounded-3xl border-0 mt-6 bg-white/85 backdrop-blur">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -209,8 +219,14 @@ const Wallet = () => {
                 })),
               ]
                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                .map((item, idx) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className="flex items-center gap-3 p-3 bg-secondary rounded-xl"
+                  >
                     {item.kind === 'consultation' ? (
                       <Avatar className="w-10 h-10 ring-2 ring-primary/20">
                         <AvatarImage src={item.doctor?.image_url || item.doctor?.profiles?.avatar_url || '/placeholder.svg'} alt={item.doctor?.doctor_name || 'دكتور'} className="object-cover" />
@@ -236,9 +252,9 @@ const Wallet = () => {
                       </p>
                     </div>
                     <div className="text-primary font-bold">
-                      {Number(item.amount).toFixed(2)} ج
+                      {Number(item.amount).toFixed(0)} نقطة
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               {consultations.length === 0 && depositRequests.length === 0 && (
                 <p className="text-center text-muted-foreground py-6">لا يوجد سجل بعد</p>
@@ -246,6 +262,7 @@ const Wallet = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         
       </div>
@@ -266,7 +283,7 @@ const Wallet = () => {
           <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString('ar-EG')} • ID: {t.id}</p>
         </div>
         <div className={`text-lg font-bold ${color}`}>
-          {sign}{amount.toFixed(2)} ج
+          {sign}{amount.toFixed(0)} نقطة
         </div>
       </div>
     );

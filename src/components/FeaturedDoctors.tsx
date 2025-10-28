@@ -68,7 +68,7 @@ const FeaturedDoctors = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full">
-                    {doctor.consultation_fee} ج
+                    {doctor.consultation_fee} نقطة
                   </Badge>
                   <Badge variant="default" className="text-xs px-3 py-1 rounded-full">
                     موثق

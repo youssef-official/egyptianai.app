@@ -184,9 +184,9 @@ const DoctorDashboard = () => {
   const handleWithdraw = async () => {
     if (!withdrawAmount || !doctor) return;
 
-    const netAmount = parseFloat(withdrawAmount); // المبلغ الصافي الذي سيستلمه الدكتور
-    const commission = netAmount / 0.9 * 0.1; // حساب العمولة
-    const totalAmount = netAmount + commission; // المبلغ الإجمالي الذي سيتم خصمه
+    const netAmount = parseFloat(withdrawAmount); // النقاط الصافية التي سيستلمها الدكتور
+    const commission = netAmount / 0.9 * 0.1; // عمولة النقاط
+    const totalAmount = netAmount + commission; // إجمالي النقاط المخصومة
 
     if (totalAmount <= 0 || totalAmount > parseFloat(wallet.balance)) {
       toast({
@@ -202,8 +202,8 @@ const DoctorDashboard = () => {
         .from("withdraw_requests")
         .insert({
           doctor_id: doctor.id,
-          amount: totalAmount, // المبلغ الإجمالي الذي سيُخصم
-          net_amount: netAmount, // المبلغ الصافي الذي سيستلمه الدكتور
+          amount: totalAmount, // إجمالي النقاط التي ستُخصم
+          net_amount: netAmount, // النقاط الصافية التي سيستلمها الدكتور
           commission: commission,
           status: "pending"
         });
@@ -222,7 +222,7 @@ const DoctorDashboard = () => {
 
       toast({
         title: "تم الإرسال!",
-        description: `تم إرسال طلب سحب ${netAmount.toFixed(2)} جنيه. سيتم خصم ${totalAmount.toFixed(2)} جنيه من رصيدك (شامل عمولة 10%)`,
+        description: `تم إرسال طلب سحب ${netAmount.toFixed(0)} نقطة. سيتم خصم ${totalAmount.toFixed(0)} نقطة من رصيدك (شامل عمولة 10%)`,
       });
 
       setWithdrawAmount("");
@@ -380,7 +380,7 @@ const DoctorDashboard = () => {
               <div className="flex-1">
                 <p className="font-semibold mb-1">ملاحظة من الإدارة بخصوص طلب السحب {req.status === 'approved' ? 'المقبول' : 'المرفوض'}:</p>
                 <p className="text-sm">{req.admin_notes}</p>
-                <p className="text-xs mt-2 text-blue-700">المبلغ الصافي: {req.net_amount} جنيه - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
+                <p className="text-xs mt-2 text-blue-700">الصافي: {req.net_amount} نقطة - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -427,13 +427,13 @@ const DoctorDashboard = () => {
             <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
                 <Wallet className="w-5 h-5" />
-                الرصيد الحالي
+                رصيد النقاط
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
                 <div className="text-5xl font-bold text-primary">
-                  {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-2xl">جنيه</span>
+                  {wallet?.balance?.toFixed(0) || "0"} <span className="text-2xl">نقطة</span>
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
@@ -450,12 +450,12 @@ const DoctorDashboard = () => {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="withdrawAmount">المبلغ (جنيه)</Label>
+                        <Label htmlFor="withdrawAmount">النقاط (الصافي)</Label>
                         <Input
                           id="withdrawAmount"
                           type="number"
                           min="1"
-                          step="0.01"
+                          step="1"
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
                           placeholder="0.00"
@@ -464,10 +464,10 @@ const DoctorDashboard = () => {
                       </div>
                       {withdrawAmount && (
                         <div className="bg-secondary p-3 rounded-lg text-sm space-y-1">
-                          <p>المبلغ الصافي (الذي ستستلمه): <span className="font-bold text-primary">{parseFloat(withdrawAmount).toFixed(2)} جنيه</span></p>
-                          <p>العمولة (10%): {(parseFloat(withdrawAmount) / 0.9 * 0.1).toFixed(2)} جنيه</p>
+                          <p>الصافي: <span className="font-bold text-primary">{parseFloat(withdrawAmount || '0').toFixed(0)} نقطة</span></p>
+                          <p>العمولة (10%): {(parseFloat(withdrawAmount || '0') / 0.9 * 0.1).toFixed(0)} نقطة</p>
                           <p className="font-bold text-destructive border-t pt-2 mt-2">
-                            سيتم خصم: {(parseFloat(withdrawAmount) / 0.9).toFixed(2)} جنيه من رصيدك
+                            سيتم خصم: {(parseFloat(withdrawAmount || '0') / 0.9).toFixed(0)} نقطة من رصيدك
                           </p>
                         </div>
                       )}
@@ -530,7 +530,7 @@ const DoctorDashboard = () => {
                 {searchKind === 'transaction' && (
                   <>
                     <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
-                    <p><strong>المبلغ:</strong> {searchResult.amount} جنيه</p>
+                        <p><strong>النقاط:</strong> {searchResult.amount} نقطة</p>
                     <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
                     {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
                     {searchResult.doctors && (
@@ -544,9 +544,9 @@ const DoctorDashboard = () => {
                 {searchKind === 'withdraw' && (
                   <>
                     <p><strong>نوع:</strong> طلب سحب</p>
-                    <p><strong>الإجمالي:</strong> {searchResult.amount} جنيه</p>
-                    <p><strong>الصافي:</strong> {searchResult.net_amount} جنيه</p>
-                    <p><strong>العمولة:</strong> {searchResult.commission} جنيه</p>
+                    <p><strong>الإجمالي:</strong> {searchResult.amount} نقطة</p>
+                    <p><strong>الصافي:</strong> {searchResult.net_amount} نقطة</p>
+                    <p><strong>العمولة:</strong> {searchResult.commission} نقطة</p>
                     <p><strong>الحالة:</strong> {searchResult.status}</p>
                     <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
                     {searchResult.admin_notes && <p><strong>ملاحظات الإدارة:</strong> {searchResult.admin_notes}</p>}
@@ -584,7 +584,7 @@ const DoctorDashboard = () => {
                         <p className="text-xs text-muted-foreground">ID: {transaction.id}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-primary">{transaction.amount} جنيه</p>
+                        <p className="font-bold text-primary">{transaction.amount} نقطة</p>
                       </div>
                     </div>
                   ))}
@@ -675,7 +675,7 @@ const DoctorDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="consultation_fee">سعر الاستشارة (جنيه) *</Label>
+                  <Label htmlFor="consultation_fee">سعر الاستشارة (نقطة) *</Label>
                   <Input
                     id="consultation_fee"
                     type="number"

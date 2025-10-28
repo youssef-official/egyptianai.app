@@ -97,14 +97,14 @@ const Deposit = () => {
         </div>
         <Card className="shadow-strong animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-3xl">
-            <CardTitle>شحن الرصيد</CardTitle>
+            <CardTitle>إيداع النقاط</CardTitle>
             <CardDescription className="text-white/90">اختر الطريقة وأرفق إثبات الدفع</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="amount">المبلغ (جنيه)</Label>
-                <Input id="amount" type="number" min="1" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" required className="text-right" />
+                <Label htmlFor="amount">عدد النقاط</Label>
+                <Input id="amount" type="number" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" required className="text-right" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="method">طريقة الدفع</Label>

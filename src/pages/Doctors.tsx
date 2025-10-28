@@ -111,7 +111,7 @@ const Doctors = () => {
 
         <h1 className="text-3xl font-bold text-center mb-2">{selectedDept.name_ar}</h1>
         <p className="text-center text-muted-foreground mb-8">
-          رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(2)} جنيه</span>
+          رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(0)} نقطة</span>
         </p>
 
         {doctors.filter(d => d.is_verified).length > 0 && (
@@ -141,7 +141,7 @@ const Doctors = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <span className="text-xl font-bold text-primary">{doctor.price} نقطة</span>
                         <Button 
                           onClick={() => handleStartChat(doctor.id)}
                           className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"
@@ -179,7 +179,7 @@ const Doctors = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <span className="text-xl font-bold text-primary">{doctor.price} نقطة</span>
                         <Button 
                           onClick={() => handleStartChat(doctor.id)}
                           className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"
