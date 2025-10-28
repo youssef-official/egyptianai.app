@@ -132,7 +132,7 @@ $$;
 
 -- RPC: user requests a chat with a doctor after payment
 CREATE OR REPLACE FUNCTION public.request_chat(_doctor_id uuid, _consultation_id text)
-RETURNS TABLE(session_id text, position integer, status text)
+RETURNS TABLE(session_id text, queue_position integer, status text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   _user_id uuid := auth.uid();

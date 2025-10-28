@@ -42,7 +42,7 @@ export default function Chat() {
       } else {
         const row = Array.isArray(data) ? data[0] : data;
         setSessionId(row?.session_id || '');
-        setQueuePos(row?.position ?? null);
+        setQueuePos(row?.queue_position ?? null);
         setStatus(row?.status || 'queued');
       }
       setLoading(false);
