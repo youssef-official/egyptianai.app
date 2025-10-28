@@ -577,6 +577,7 @@ const DoctorDashboard = () => {
                         <p className="font-semibold">{transaction.sender?.full_name}</p>
                         <p className="text-xs text-muted-foreground">
                           {transaction.sender?.phone && `📱 ${transaction.sender?.phone}`}
+                          {transaction.sender?.email && <span className="block">{transaction.sender?.email}</span>}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleString('ar-EG')}
