@@ -125,10 +125,17 @@ const AdminDashboard = () => {
         .eq("user_id", userId);
     }
 
+    const depositRequest = depositRequests.find(r => r.id === requestId);
+    if (depositRequest?.proof_image_url) {
+      // Delete the image from storage
+      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+    }
+
     await supabase
       .from("deposit_requests")
       .update({ 
         status: "approved",
+        proof_image_url: null, // Clear the URL in the database
         admin_notes: adminNotes[requestId] || ""
       })
       .eq("id", requestId);
@@ -149,10 +156,17 @@ const AdminDashboard = () => {
   };
 
   const handleDepositReject = async (requestId: string) => {
+    const depositRequest = depositRequests.find(r => r.id === requestId);
+    if (depositRequest?.proof_image_url) {
+      // Delete the image from storage
+      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+    }
+    
     await supabase
       .from("deposit_requests")
       .update({ 
         status: "rejected",
+        proof_image_url: null, // Clear the URL in the database
         admin_notes: adminNotes[requestId] || ""
       })
       .eq("id", requestId);
