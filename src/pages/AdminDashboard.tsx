@@ -783,13 +783,16 @@ const AdminDashboard = () => {
                             className="rounded-full"
                             onClick={async () => {
                               const path: string = req.proof_image_url;
-                              const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
-                              if (delErr) {
-                                toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
-                              } else {
-                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                                setSelectedImage('');
-                                loadData();
+                              if (path) {
+                                const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
+                                if (delErr) {
+                                  toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
+                                } else {
+                                  await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                                  toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                  setSelectedImage('');
+                                  loadData();
+                                }
                               }
                             }}
                           >
@@ -827,24 +830,7 @@ const AdminDashboard = () => {
                           <XCircle className="w-4 h-4 mr-2" />
                           رفض
                         </Button>
-                        {req.status !== 'pending' && req.proof_image_url && (
-                          <Button
-                            onClick={async () => {
-                              const { error: delErr2 } = await supabase.storage.from('deposit-proofs').remove([req.proof_image_url]);
-                              if (delErr2) {
-                                toast({ title: 'خطأ', description: delErr2.message, variant: 'destructive' });
-                              } else {
-                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                                loadData();
-                              }
-                            }}
-                            variant="outline"
-                            className="rounded-full"
-                            size="sm"
-                          >
-                            حذف الإثبات
-                          </Button>
-                        )}
+                        
                       </div>
                     </>
                   )}

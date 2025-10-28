@@ -581,7 +581,7 @@ const DoctorDashboard = () => {
                         <p className="text-xs text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleString('ar-EG')}
                         </p>
-                        <p className="text-xs text-muted-foreground">ID: {transaction.id}</p>
+                        <p className="text-xs text-muted-foreground">رقم العملية: {transaction.id}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-primary">{transaction.amount} نقطة</p>
