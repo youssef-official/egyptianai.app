@@ -12,6 +12,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Doctors = lazy(() => import("./pages/Doctors"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const Transfer = lazy(() => import("./pages/Transfer"));
+const Deposit = lazy(() => import("./pages/Deposit"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/doctors" element={<Doctors />} />
             <Route path="/wallet" element={<Wallet />} />
+            <Route path="/deposit" element={<Deposit />} />
             <Route path="/transfer" element={<Transfer />} />
             <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
             <Route path="/profile" element={<Profile />} />

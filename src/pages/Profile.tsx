@@ -284,7 +284,7 @@ const Profile = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-xl">جنيه</span>
+                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
               </div>
             </div>
           </CardContent>

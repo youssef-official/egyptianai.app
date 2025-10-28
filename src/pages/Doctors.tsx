@@ -47,7 +47,7 @@ const Doctors = () => {
   const loadDoctors = async (deptId: string) => {
     const { data } = await supabase
       .from("doctors")
-      .select("*, profiles(*)")
+      .select("*, profiles(avatar_url)")
       .eq("department_id", deptId)
       .eq("is_active", true)
       .order("is_verified", { ascending: false });
@@ -111,7 +111,7 @@ const Doctors = () => {
 
         <h1 className="text-3xl font-bold text-center mb-2">{selectedDept.name_ar}</h1>
         <p className="text-center text-muted-foreground mb-8">
-          رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(2)} جنيه</span>
+          رصيدك الحالي: <span className="font-bold text-primary">{wallet?.balance?.toFixed(0)} نقطة</span>
         </p>
 
         {doctors.filter(d => d.is_verified).length > 0 && (
@@ -125,7 +125,7 @@ const Doctors = () => {
                 <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
                   <div className="flex items-center gap-4 p-4">
                     <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-primary shadow-lg ml-2 order-2 md:order-1 md:ml-0">
-                      <AvatarImage src={doctor.image_url} className="object-cover" />
+                      <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" loading="lazy" />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary-light text-white">
                         {doctor.doctor_name?.charAt(0) || 'د'}
                       </AvatarFallback>
@@ -141,7 +141,7 @@ const Doctors = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <span className="text-xl font-bold text-primary">{doctor.price} نقطة</span>
                         <Button 
                           onClick={() => handleStartChat(doctor.id)}
                           className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"
@@ -166,7 +166,7 @@ const Doctors = () => {
                 <Card key={doctor.id} className="cursor-pointer hover:shadow-strong transition-all hover:scale-[1.01] animate-fade-in rounded-2xl border-0 shadow-medium overflow-hidden">
                   <div className="flex items-center gap-4 p-4">
                     <Avatar className="w-20 h-20 flex-shrink-0 border-3 border-gray-300 shadow-lg ml-2 order-2 md:order-1 md:ml-0">
-                      <AvatarImage src={doctor.image_url} className="object-cover" />
+                      <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} className="object-cover" loading="lazy" />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-gray-400 to-gray-500 text-white">
                         {doctor.doctor_name?.charAt(0) || 'د'}
                       </AvatarFallback>
@@ -179,7 +179,7 @@ const Doctors = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2">{doctor.bio_ar}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xl font-bold text-primary">{doctor.price} ج</span>
+                        <span className="text-xl font-bold text-primary">{doctor.price} نقطة</span>
                         <Button 
                           onClick={() => handleStartChat(doctor.id)}
                           className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-full h-9 px-6"

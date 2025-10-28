@@ -4,7 +4,9 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, Authorization, x-client-info, apikey, content-type, Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 serve(async (req) => {
@@ -46,6 +48,43 @@ serve(async (req) => {
               <h2>أهلاً ${data.name}</h2>
               <p>شكراً لتسجيلك في منصة الاستشارات الطبية. نحن سعداء بانضمامك إلينا!</p>
               <p>يمكنك الآن البدء في استخدام المنصة والحصول على استشارات طبية من أفضل الأطباء.</p>
+            </div>
+            <div class="footer">
+              <p>© 2025 منصة الاستشارات الطبية</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    } else if (type === 'deposit_received') {
+      subject = 'تم استلام طلب الإيداع';
+      html = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); padding: 30px; text-align: center; }
+            .header img { max-width: 80px; margin-bottom: 15px; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .amount { background: #eef6ff; padding: 15px; border-radius: 8px; text-align: center; font-size: 20px; color: #0369a1; font-weight: bold; margin: 20px 0; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" />
+              <h1>تم استلام طلب الإيداع</h1>
+            </div>
+            <div class="content">
+              <h2>أهلاً ${data.name || ''}</h2>
+              <p>تم استلام طلب الإيداع الخاص بك وسيتم مراجعته من قبل فريقنا.</p>
+              <div class="amount">${data.amount} جنيه</div>
+              ${data.method ? `<p><strong>طريقة الدفع:</strong> ${data.method}</p>` : ''}
+              <p>ستصلك رسالة أخرى بعد الموافقة أو الرفض.</p>
             </div>
             <div class="footer">
               <p>© 2025 منصة الاستشارات الطبية</p>
@@ -118,6 +157,42 @@ serve(async (req) => {
               <p>نأسف لإبلاغك أنه تم رفض طلب الإيداع الخاص بك بمبلغ ${data.amount} جنيه.</p>
               ${data.notes ? `<p><strong>السبب:</strong> ${data.notes}</p>` : ''}
               <p>يرجى التواصل معنا إذا كان لديك أي استفسارات.</p>
+            </div>
+            <div class="footer">
+              <p>© 2025 منصة الاستشارات الطبية</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    } else if (type === 'withdraw_received') {
+      subject = 'تم استلام طلب السحب';
+      html = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); padding: 30px; text-align: center; }
+            .header img { max-width: 80px; margin-bottom: 15px; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .amount { background: #eef6ff; padding: 15px; border-radius: 8px; text-align: center; font-size: 20px; color: #0369a1; font-weight: bold; margin: 20px 0; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" />
+              <h1>تم استلام طلب السحب</h1>
+            </div>
+            <div class="content">
+              <h2>عزيزي الدكتور ${data.name || ''}</h2>
+              <p>تم استلام طلب السحب الخاص بك وجاري المراجعة من قبل الإدارة.</p>
+              <div class="amount">الصافي المطلوب: ${data.amount} جنيه</div>
+              <p>ستصلك رسالة أخرى بعد الموافقة أو الرفض.</p>
             </div>
             <div class="footer">
               <p>© 2025 منصة الاستشارات الطبية</p>

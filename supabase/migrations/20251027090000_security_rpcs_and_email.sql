@@ -178,3 +178,26 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.perform_transfer(uuid, numeric) TO anon, authenticated;
+
+-- Reports table for doctors
+CREATE TABLE IF NOT EXISTS public.doctor_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  doctor_id UUID NOT NULL REFERENCES public.doctors(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.doctor_reports ENABLE ROW LEVEL SECURITY;
+
+-- Policies: user can insert, admins and doctor owner can read
+CREATE POLICY IF NOT EXISTS "Users can create reports"
+ON public.doctor_reports FOR INSERT
+WITH CHECK (reporter_id = auth.uid());
+
+CREATE POLICY IF NOT EXISTS "Admins/owners can read reports"
+ON public.doctor_reports FOR SELECT
+USING (
+  has_role(auth.uid(), 'admin') OR 
+  doctor_id IN (SELECT id FROM public.doctors WHERE user_id = auth.uid())
+);

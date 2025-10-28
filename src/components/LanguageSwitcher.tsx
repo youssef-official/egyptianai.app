@@ -1,65 +1,30 @@
+import { SUPPORTED_LANGS, applyDirection } from '@/i18n';
 import { useTranslation } from 'react-i18next';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Globe } from 'lucide-react';
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-const languages = [
-  { code: 'ar', name: 'العربية', flag: '🇪🇬' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-];
 
 const LanguageSwitcher = () => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
-  useEffect(() => {
-    // Set direction based on language
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
-
-  const handleLanguageChange = async (langCode: string) => {
-    i18n.changeLanguage(langCode);
-    localStorage.setItem('language', langCode);
-    
-    // Update user profile with selected language
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ preferred_language: langCode })
-        .eq('id', user.id);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const lang = e.target.value as keyof typeof SUPPORTED_LANGS;
+    i18n.changeLanguage(lang);
+    applyDirection(lang);
+    localStorage.setItem('lang', lang);
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Globe className="w-4 h-4 text-muted-foreground" />
-      <Select value={i18n.language} onValueChange={handleLanguageChange}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue>
-            {languages.find(lang => lang.code === i18n.language)?.flag}{' '}
-            {languages.find(lang => lang.code === i18n.language)?.name}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {languages.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
-              {lang.flag} {lang.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="inline-flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">{t('common.language', 'Language')}</span>
+      <select
+        value={i18n.language}
+        onChange={handleChange}
+        className="text-xs rounded-full px-2 py-1 bg-secondary hover:bg-secondary/80 border"
+      >
+        {Object.entries(SUPPORTED_LANGS).map(([code, meta]) => (
+          <option key={code} value={code}>
+            {meta.native}
+          </option>
+        ))}
+      </select>
     </div>
   );
 };

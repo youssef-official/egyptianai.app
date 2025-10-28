@@ -22,6 +22,7 @@ const DoctorDashboard = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchKind, setSearchKind] = useState<"transaction" | "withdraw" | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -119,7 +120,7 @@ const DoctorDashboard = () => {
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select("*, profiles(full_name, avatar_url, phone)")
+        .select("*, sender:profiles!transactions_user_id_fkey(full_name, avatar_url, phone, email)")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -143,34 +144,49 @@ const DoctorDashboard = () => {
   const handleSearch = async () => {
     if (!searchId) return;
 
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("*, profiles(*)")
-      .eq("id", searchId.toUpperCase())
-      .single();
+    const id = searchId.trim();
 
-    if (error || !data) {
-      toast({
-        title: "غير موجود",
-        description: "لم يتم العثور على العملية",
-        variant: "destructive",
-      });
-      setSearchResult(null);
-    } else {
-      setSearchResult(data);
-      toast({
-        title: "تم العثور!",
-        description: "تم العثور على العملية",
-      });
+    // Try transactions first (consultation/transfer)
+    const { data: tx } = await supabase
+      .from("transactions")
+      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (tx) {
+      setSearchKind("transaction");
+      setSearchResult(tx);
+      toast({ title: "تم العثور!", description: "تم العثور على العملية" });
+      return;
     }
+
+    // Try withdraw requests (limited to current doctor)
+    if (doctor) {
+      const { data: wd } = await supabase
+        .from("withdraw_requests")
+        .select("*")
+        .eq("id", id)
+        .eq("doctor_id", doctor.id)
+        .maybeSingle();
+      if (wd) {
+        setSearchKind("withdraw");
+        setSearchResult(wd);
+        toast({ title: "تم العثور!", description: "تم العثور على طلب السحب" });
+        return;
+      }
+    }
+
+    setSearchKind(null);
+    setSearchResult(null);
+    toast({ title: "غير موجود", description: "لم يتم العثور على العملية", variant: "destructive" });
   };
 
   const handleWithdraw = async () => {
     if (!withdrawAmount || !doctor) return;
 
-    const netAmount = parseFloat(withdrawAmount); // المبلغ الصافي الذي سيستلمه الدكتور
-    const commission = netAmount / 0.9 * 0.1; // حساب العمولة
-    const totalAmount = netAmount + commission; // المبلغ الإجمالي الذي سيتم خصمه
+    const netAmount = parseFloat(withdrawAmount); // النقاط الصافية التي سيستلمها الدكتور
+    const commission = netAmount / 0.9 * 0.1; // عمولة النقاط
+    const totalAmount = netAmount + commission; // إجمالي النقاط المخصومة
 
     if (totalAmount <= 0 || totalAmount > parseFloat(wallet.balance)) {
       toast({
@@ -186,15 +202,27 @@ const DoctorDashboard = () => {
         .from("withdraw_requests")
         .insert({
           doctor_id: doctor.id,
-          amount: totalAmount, // المبلغ الإجمالي الذي سيُخصم
-          net_amount: netAmount, // المبلغ الصافي الذي سيستلمه الدكتور
+          amount: totalAmount, // إجمالي النقاط التي ستُخصم
+          net_amount: netAmount, // النقاط الصافية التي سيستلمها الدكتور
           commission: commission,
           status: "pending"
         });
 
+      // Email doctor that withdraw was received
+      try {
+        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (prof?.email) {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ type: 'withdraw_received', to: prof.email, data: { name: doctor.doctor_name, amount: netAmount } })
+          });
+        }
+      } catch (_) {}
+
       toast({
         title: "تم الإرسال!",
-        description: `تم إرسال طلب سحب ${netAmount.toFixed(2)} جنيه. سيتم خصم ${totalAmount.toFixed(2)} جنيه من رصيدك (شامل عمولة 10%)`,
+        description: `تم إرسال طلب سحب ${netAmount.toFixed(0)} نقطة. سيتم خصم ${totalAmount.toFixed(0)} نقطة من رصيدك (شامل عمولة 10%)`,
       });
 
       setWithdrawAmount("");
@@ -352,7 +380,7 @@ const DoctorDashboard = () => {
               <div className="flex-1">
                 <p className="font-semibold mb-1">ملاحظة من الإدارة بخصوص طلب السحب {req.status === 'approved' ? 'المقبول' : 'المرفوض'}:</p>
                 <p className="text-sm">{req.admin_notes}</p>
-                <p className="text-xs mt-2 text-blue-700">المبلغ الصافي: {req.net_amount} جنيه - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
+                <p className="text-xs mt-2 text-blue-700">الصافي: {req.net_amount} نقطة - {new Date(req.created_at).toLocaleDateString('ar-EG')}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -399,13 +427,13 @@ const DoctorDashboard = () => {
             <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
                 <Wallet className="w-5 h-5" />
-                الرصيد الحالي
+                رصيد النقاط
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
                 <div className="text-5xl font-bold text-primary">
-                  {wallet?.balance?.toFixed(2) || "0.00"} <span className="text-2xl">جنيه</span>
+                  {wallet?.balance?.toFixed(0) || "0"} <span className="text-2xl">نقطة</span>
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
@@ -413,7 +441,7 @@ const DoctorDashboard = () => {
                       طلب سحب
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="text-right">
+                  <DialogContent className="text-right" aria-describedby={undefined}>
                     <DialogHeader>
                       <DialogTitle>طلب سحب رصيد</DialogTitle>
                       <DialogDescription>
@@ -422,12 +450,12 @@ const DoctorDashboard = () => {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="withdrawAmount">المبلغ (جنيه)</Label>
+                        <Label htmlFor="withdrawAmount">النقاط (الصافي)</Label>
                         <Input
                           id="withdrawAmount"
                           type="number"
                           min="1"
-                          step="0.01"
+                          step="1"
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
                           placeholder="0.00"
@@ -436,10 +464,10 @@ const DoctorDashboard = () => {
                       </div>
                       {withdrawAmount && (
                         <div className="bg-secondary p-3 rounded-lg text-sm space-y-1">
-                          <p>المبلغ الصافي (الذي ستستلمه): <span className="font-bold text-primary">{parseFloat(withdrawAmount).toFixed(2)} جنيه</span></p>
-                          <p>العمولة (10%): {(parseFloat(withdrawAmount) / 0.9 * 0.1).toFixed(2)} جنيه</p>
+                          <p>الصافي: <span className="font-bold text-primary">{parseFloat(withdrawAmount || '0').toFixed(0)} نقطة</span></p>
+                          <p>العمولة (10%): {(parseFloat(withdrawAmount || '0') / 0.9 * 0.1).toFixed(0)} نقطة</p>
                           <p className="font-bold text-destructive border-t pt-2 mt-2">
-                            سيتم خصم: {(parseFloat(withdrawAmount) / 0.9).toFixed(2)} جنيه من رصيدك
+                            سيتم خصم: {(parseFloat(withdrawAmount || '0') / 0.9).toFixed(0)} نقطة من رصيدك
                           </p>
                         </div>
                       )}
@@ -498,11 +526,32 @@ const DoctorDashboard = () => {
               <Button onClick={handleSearch}>بحث</Button>
             </div>
             {searchResult && (
-              <div className="mt-4 p-4 bg-secondary rounded-lg">
-                <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
-                <p><strong>المبلغ:</strong> {searchResult.amount} جنيه</p>
-                <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
-                <p><strong>الوصف:</strong> {searchResult.description}</p>
+              <div className="mt-4 p-4 bg-secondary rounded-lg space-y-2">
+                {searchKind === 'transaction' && (
+                  <>
+                    <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
+                        <p><strong>النقاط:</strong> {searchResult.amount} نقطة</p>
+                    <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
+                    {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
+                    {searchResult.doctors && (
+                      <div className="mt-2 p-2 rounded-md bg-background">
+                        <p className="font-semibold">بيانات الطبيب</p>
+                        <p className="text-sm">{searchResult.doctors?.doctor_name} • {searchResult.doctors?.medical_departments?.name_ar}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {searchKind === 'withdraw' && (
+                  <>
+                    <p><strong>نوع:</strong> طلب سحب</p>
+                    <p><strong>الإجمالي:</strong> {searchResult.amount} نقطة</p>
+                    <p><strong>الصافي:</strong> {searchResult.net_amount} نقطة</p>
+                    <p><strong>العمولة:</strong> {searchResult.commission} نقطة</p>
+                    <p><strong>الحالة:</strong> {searchResult.status}</p>
+                    <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
+                    {searchResult.admin_notes && <p><strong>ملاحظات الإدارة:</strong> {searchResult.admin_notes}</p>}
+                  </>
+                )}
               </div>
             )}
           </CardContent>
@@ -519,23 +568,24 @@ const DoctorDashboard = () => {
                   {transactions.map((transaction) => (
                     <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
                       <Avatar className="w-12 h-12 border-2 border-primary/20">
-                        <AvatarImage src={transaction.profiles?.avatar_url} />
+                        <AvatarImage src={transaction.sender?.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
-                          {transaction.profiles?.full_name?.charAt(0) || 'م'}
+                          {transaction.sender?.full_name?.charAt(0) || 'م'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-semibold">{transaction.profiles?.full_name}</p>
+                        <p className="font-semibold">{transaction.sender?.full_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {transaction.profiles?.phone && `📱 ${transaction.profiles?.phone}`}
+                          {transaction.sender?.phone && `📱 ${transaction.sender?.phone}`}
+                          {transaction.sender?.email && <span className="block">{transaction.sender?.email}</span>}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleString('ar-EG')}
                         </p>
-                        <p className="text-xs text-muted-foreground">ID: {transaction.id}</p>
+                        <p className="text-xs text-muted-foreground">رقم العملية: {transaction.id}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-primary">{transaction.amount} جنيه</p>
+                        <p className="font-bold text-primary">{transaction.amount} نقطة</p>
                       </div>
                     </div>
                   ))}
@@ -626,7 +676,7 @@ const DoctorDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="consultation_fee">سعر الاستشارة (جنيه) *</Label>
+                  <Label htmlFor="consultation_fee">سعر الاستشارة (نقطة) *</Label>
                   <Input
                     id="consultation_fee"
                     type="number"

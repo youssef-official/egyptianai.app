@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Stethoscope, Mail, Lock, User, Phone, Info } from "lucide-react";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showExtraFields, setShowExtraFields] = useState(false);
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +24,6 @@ const Auth = () => {
   const [userType, setUserType] = useState<"user" | "doctor">("user");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +46,8 @@ const Auth = () => {
             .single();
 
           toast({
-            title: t("auth.welcome"),
-            description: t("auth.loginSuccess"),
+            title: "مرحباً بك!",
+            description: "تم تسجيل الدخول بنجاح",
           });
 
           if (profile?.user_type === "doctor") {
@@ -74,15 +74,15 @@ const Auth = () => {
         if (error) throw error;
 
         toast({
-          title: t("auth.accountCreated"),
-          description: t("auth.canLoginNow"),
+          title: "تم إنشاء الحساب!",
+          description: "يمكنك الآن تسجيل الدخول",
         });
 
         setIsLogin(true);
       }
     } catch (error: any) {
       toast({
-        title: t("auth.error"),
+        title: "خطأ",
         description: error.message,
         variant: "destructive",
       });
@@ -91,126 +91,28 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: t("auth.error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-purple-50 to-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative circles similar to the design */}
-      <div className="absolute top-20 left-10 w-48 h-48 bg-gradient-to-br from-purple-300 to-purple-200 rounded-full opacity-60 blur-xl"></div>
-      <div className="absolute bottom-20 right-10 w-64 h-64 bg-gradient-to-br from-pink-300 to-red-300 rounded-full opacity-60 blur-xl"></div>
-      <div className="absolute top-40 right-20 w-32 h-32 bg-gradient-to-br from-gray-300 to-gray-200 rounded-full opacity-40 blur-lg"></div>
-      
-      <div className="absolute top-4 right-4 z-20">
-        <LanguageSwitcher />
-      </div>
-      
-      <Card className="w-full max-w-md shadow-2xl animate-fade-in rounded-3xl border-0 bg-white/95 backdrop-blur-sm relative z-10">
-        <CardHeader className="space-y-4 text-center pb-6 pt-8">
-          <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center shadow-lg">
-            <Stethoscope className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-fuchsia-100 via-pink-100 to-white flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="w-full max-w-md">
+      <Card className="w-full shadow-strong rounded-3xl border-0 hover-lift bg-white/80 backdrop-blur">
+        <CardHeader className="space-y-1 text-center pb-8">
+          <div className="w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-glow animate-pulse-glow">
+            <Stethoscope className="w-14 h-14 text-white" />
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">SPEEDSPRINT</p>
-            <CardTitle className="text-4xl font-bold text-gray-900 mb-2">
-              {t("app.tagline")}
-            </CardTitle>
-            <p className="text-5xl font-bold text-gray-900">{t("app.name")}</p>
-          </div>
+          <CardTitle className="text-3xl font-extrabold text-foreground">
+            {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
+          </CardTitle>
+          <CardDescription className="text-base text-muted-foreground">
+            {isLogin ? t('auth.login') : t('auth.signup')}
+          </CardDescription>
         </CardHeader>
 
-        <CardContent className="px-8 pb-8">
-          <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && showExtraFields && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium">
-                    <User className="w-4 h-4" />
-                    {t("auth.fullName")}
-                  </Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={!isLogin}
-                    className="rounded-xl border-gray-200 h-12"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
-                    <Phone className="w-4 h-4" />
-                    {t("auth.phone")}
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required={!isLogin}
-                    className="rounded-xl border-gray-200 h-12"
-                    placeholder="01XXXXXXXXX"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="referral" className="flex items-center gap-2 text-sm font-medium">
-                    <Info className="w-4 h-4" />
-                    {t("auth.referralSource")}
-                  </Label>
-                  <Select value={referralSource} onValueChange={setReferralSource}>
-                    <SelectTrigger className="rounded-xl border-gray-200 h-12">
-                      <SelectValue placeholder={t("auth.referralSource")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="facebook">Facebook</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
-                      <SelectItem value="twitter">Twitter</SelectItem>
-                      <SelectItem value="friend">Friend</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="userType" className="flex items-center gap-2 text-sm font-medium">
-                    <Stethoscope className="w-4 h-4" />
-                    {t("auth.userType")}
-                  </Label>
-                  <Select value={userType} onValueChange={(value: "user" | "doctor") => setUserType(value)}>
-                    <SelectTrigger className="rounded-xl border-gray-200 h-12">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">{t("auth.normalUser")}</SelectItem>
-                      <SelectItem value="doctor">{t("auth.doctor")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
+        <CardContent>
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold">
                 <Mail className="w-4 h-4" />
-                {t("auth.email")}
+                {t('auth.email')}
               </Label>
               <Input
                 id="email"
@@ -218,15 +120,15 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-xl border-gray-200 h-12"
+                className="text-right rounded-2xl transition-all h-12 border-2 focus:border-primary"
                 placeholder="example@email.com"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2 text-sm font-medium">
+            <div className="space-y-3">
+              <Label htmlFor="password" className="flex items-center gap-2 text-sm font-semibold">
                 <Lock className="w-4 h-4" />
-                {t("auth.password")}
+                {t('auth.password')}
               </Label>
               <Input
                 id="password"
@@ -234,27 +136,96 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="rounded-xl border-gray-200 h-12"
+                className="text-right rounded-2xl transition-all h-12 border-2 focus:border-primary"
                 minLength={6}
               />
             </div>
 
+            <div className={`space-y-4 overflow-hidden transition-all duration-500 ${!isLogin && showExtraFields ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  الاسم الكامل
+                </Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required={!isLogin}
+                  className="text-right rounded-2xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  رقم الهاتف
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required={!isLogin}
+                  className="text-right rounded-2xl"
+                  placeholder="01XXXXXXXXX"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="referral" className="flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  من أين سمعت عنا؟
+                </Label>
+                <Select value={referralSource} onValueChange={setReferralSource}>
+                  <SelectTrigger className="text-right rounded-2xl">
+                    <SelectValue placeholder="اختر..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="facebook">فيسبوك</SelectItem>
+                    <SelectItem value="instagram">إنستجرام</SelectItem>
+                    <SelectItem value="twitter">تويتر</SelectItem>
+                    <SelectItem value="friend">صديق</SelectItem>
+                    <SelectItem value="other">آخر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="userType" className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4" />
+                  نوع الحساب
+                </Label>
+                <Select value={userType} onValueChange={(value: "user" | "doctor") => setUserType(value)}>
+                  <SelectTrigger className="text-right rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">مستخدم عادي 🧍</SelectItem>
+                    <SelectItem value="doctor">دكتور 🧑‍⚕️</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white rounded-full h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all mt-6" 
+              className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-glow transition-all rounded-2xl h-14 text-lg font-bold hover-scale" 
               disabled={loading}
             >
               {loading ? (
-                <span className="inline-block w-5 h-5 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
+                <span className="inline-block w-6 h-6 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
               ) : (
-                isLogin ? t("auth.login") : t("auth.signup")
+                isLogin ? t('auth.login') : t('auth.signup')
               )}
             </Button>
 
             <Button
               type="button"
-              variant="outline"
-              className="w-full rounded-full h-14 border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+              variant="link"
+              className="w-full text-primary hover:text-primary/80 font-semibold"
               onClick={() => {
                 setIsLogin(!isLogin);
                 if (isLogin) {
@@ -264,11 +235,12 @@ const Auth = () => {
                 }
               }}
             >
-              {isLogin ? t("auth.signup") : t("auth.login")}
+              {isLogin ? t('auth.noAccount') : t('auth.haveAccount')}
             </Button>
           </form>
         </CardContent>
       </Card>
+      </motion.div>
     </div>
   );
 };

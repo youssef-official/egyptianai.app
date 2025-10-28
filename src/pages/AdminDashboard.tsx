@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import verifiedBadge from "@/assets/verified-badge.png";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const AdminDashboard = () => {
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
@@ -25,6 +26,7 @@ const AdminDashboard = () => {
   const [selectedImage, setSelectedImage] = useState("");
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchKind, setSearchKind] = useState<"transaction" | "deposit" | "withdraw" | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -77,7 +79,7 @@ const AdminDashboard = () => {
 
     const { data: doctorsData } = await supabase
       .from("doctors")
-      .select("*")
+      .select("*, profiles(avatar_url)")
       .order("created_at", { ascending: false });
 
     const { data: doctorReqs } = await supabase
@@ -88,11 +90,12 @@ const AdminDashboard = () => {
     const { data: wallets } = await supabase.from("wallets").select("balance");
     const totalBalance = wallets?.reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     
-    const { data: transactions } = await supabase
-      .from("transactions")
-      .select("amount")
-      .eq("type", "consultation");
-    const totalCommissions = (transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0) * 0.1;
+    // Commission stats based on approved withdraw requests' commission field
+    const { data: approvedWithdraws } = await supabase
+      .from("withdraw_requests")
+      .select("commission, status")
+      .eq('status', 'approved');
+    const totalCommissions = approvedWithdraws?.reduce((sum, r) => sum + Number(r.commission || 0), 0) || 0;
 
     setDepositRequests(deposits || []);
     setWithdrawRequests(withdraws || []);
@@ -122,10 +125,17 @@ const AdminDashboard = () => {
         .eq("user_id", userId);
     }
 
+    const depositRequest = depositRequests.find(r => r.id === requestId);
+    if (depositRequest?.proof_image_url) {
+      // Delete the image from storage
+      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+    }
+
     await supabase
       .from("deposit_requests")
       .update({ 
         status: "approved",
+        proof_image_url: null, // Clear the URL in the database
         admin_notes: adminNotes[requestId] || ""
       })
       .eq("id", requestId);
@@ -146,10 +156,17 @@ const AdminDashboard = () => {
   };
 
   const handleDepositReject = async (requestId: string) => {
+    const depositRequest = depositRequests.find(r => r.id === requestId);
+    if (depositRequest?.proof_image_url) {
+      // Delete the image from storage
+      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+    }
+    
     await supabase
       .from("deposit_requests")
       .update({ 
         status: "rejected",
+        proof_image_url: null, // Clear the URL in the database
         admin_notes: adminNotes[requestId] || ""
       })
       .eq("id", requestId);
@@ -369,26 +386,51 @@ const AdminDashboard = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    const id = searchId.trim().toUpperCase();
+
+    // Try transactions (consultations/transfers)
+    const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .select("*, profiles(full_name, avatar_url, phone), doctors(*, medical_departments(*))")
-      .eq("id", searchId.toUpperCase())
+      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .eq("id", id)
       .maybeSingle();
 
-    if (error || !data) {
-      toast({
-        title: "غير موجود",
-        description: "لم يتم العثور على العملية",
-        variant: "destructive",
-      });
-      setSearchResult(null);
-    } else {
-      setSearchResult(data);
-      toast({
-        title: "تم العثور!",
-        description: "تم العثور على العملية بنجاح",
-      });
+    if (tx && !txError) {
+      setSearchKind("transaction");
+      setSearchResult(tx);
+      toast({ title: "تم العثور!", description: "تم العثور على العملية" });
+      return;
     }
+
+    // Try deposit requests
+    const { data: dep, error: depError } = await supabase
+      .from("deposit_requests")
+      .select("*, profiles(full_name, avatar_url, phone)")
+      .eq("id", id)
+      .maybeSingle();
+    if (dep && !depError) {
+      setSearchKind("deposit");
+      setSearchResult(dep);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب الإيداع" });
+      return;
+    }
+
+    // Try withdraw requests
+    const { data: wd, error: wdError } = await supabase
+      .from("withdraw_requests")
+      .select("*, doctors(doctor_name, image_url, phone_number, user_id)")
+      .eq("id", id)
+      .maybeSingle();
+    if (wd && !wdError) {
+      setSearchKind("withdraw");
+      setSearchResult(wd);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب السحب" });
+      return;
+    }
+
+    setSearchKind(null);
+    setSearchResult(null);
+    toast({ title: "غير موجود", description: "لم يتم العثور على العملية", variant: "destructive" });
   };
 
   return (
@@ -423,7 +465,7 @@ const AdminDashboard = () => {
             <CardContent className="pt-6 text-center">
               <DollarSign className="w-8 h-8 mx-auto mb-2 text-primary" />
               <div className="text-lg font-bold">{stats.totalBalance.toFixed(0)}</div>
-              <p className="text-xs text-muted-foreground">رصيد</p>
+              <p className="text-xs text-muted-foreground">نقاط</p>
             </CardContent>
           </Card>
           <Card className="shadow-medium rounded-3xl border-0">
@@ -460,63 +502,131 @@ const AdminDashboard = () => {
             </div>
             {searchResult && (
               <div className="p-5 bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-2xl space-y-3 animate-fade-in border border-primary/20">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-primary">
-                    <AvatarImage src={searchResult.profiles?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
-                      {searchResult.profiles?.full_name?.charAt(0) || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
-                    <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">رقم العملية</p>
-                    <p className="font-bold text-primary">{searchResult.id}</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">المبلغ</p>
-                    <p className="font-bold text-primary">{searchResult.amount} جنيه</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">التاريخ</p>
-                    <p className="font-bold">{new Date(searchResult.created_at).toLocaleString('ar-EG', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">النوع</p>
-                    <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
-                  </div>
-                </div>
-                {searchResult.doctors && (
-                  <div className="bg-background p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                {searchKind === 'transaction' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
+                        <AvatarImage src={searchResult.sender?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                          {searchResult.sender?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.sender?.full_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.sender?.phone || 'غير محدد'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم العملية</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">المبلغ</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">التاريخ</p>
+                        <p className="font-bold">{new Date(searchResult.created_at).toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">النوع</p>
+                        <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
+                      </div>
+                    </div>
+                    {searchResult.doctor && (
+                      <div className="bg-background p-3 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12 border-2 border-primary/20">
+                            <AvatarImage src={searchResult.doctor?.image_url} />
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                              {searchResult.doctor?.doctor_name?.charAt(0) || 'د'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold">{searchResult.doctor?.doctor_name}</p>
+                            <p className="text-xs text-muted-foreground">{searchResult.doctor?.medical_departments?.name_ar}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {searchResult.description && (
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground text-sm">الوصف</p>
+                        <p className="font-medium">{searchResult.description}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {searchKind === 'deposit' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
+                        <AvatarImage src={searchResult.profiles?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                          {searchResult.profiles?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم الطلب</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">المبلغ</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الحالة</p>
+                        <p className="font-bold">{searchResult.status}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">طريقة الدفع</p>
+                        <p className="font-bold">{searchResult.payment_method}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {searchKind === 'withdraw' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
                         <AvatarImage src={searchResult.doctors?.image_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
                           {searchResult.doctors?.doctor_name?.charAt(0) || 'د'}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-semibold">{searchResult.doctors?.doctor_name}</p>
-                        <p className="text-xs text-muted-foreground">{searchResult.doctors?.medical_departments?.name_ar}</p>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.doctors?.doctor_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.doctors?.phone_number || 'غير محدد'}</p>
                       </div>
                     </div>
-                  </div>
-                )}
-                {searchResult.description && (
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground text-sm">الوصف</p>
-                    <p className="font-medium">{searchResult.description}</p>
-                  </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم الطلب</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الإجمالي</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الصافي</p>
+                        <p className="font-bold">{searchResult.net_amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الحالة</p>
+                        <p className="font-bold">{searchResult.status}</p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -531,6 +641,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="active-doctors">الطلبات النشطة</TabsTrigger>
             <TabsTrigger value="doctors">الأطباء</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
+            <TabsTrigger value="reports">التبليغات</TabsTrigger>
           </TabsList>
           <TabsContent value="doctor-requests" className="space-y-4">
             {doctorRequests.map((req) => (
@@ -646,7 +757,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-2xl font-bold text-primary">{req.amount} جنيه</div>
+                  <div className="text-2xl font-bold text-primary">{req.amount} نقطة</div>
                   
                   <Dialog>
                     <DialogTrigger asChild>
@@ -671,12 +782,37 @@ const AdminDashboard = () => {
                         عرض إثبات الدفع
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl" aria-describedby={undefined}>
                       <DialogHeader>
                         <DialogTitle>إثبات الدفع</DialogTitle>
                       </DialogHeader>
                       {selectedImage && (
                         <img src={selectedImage} alt="Proof" className="w-full rounded-lg" />
+                      )}
+                      {req.status !== 'pending' && req.proof_image_url && (
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="rounded-full"
+                            onClick={async () => {
+                              const path: string = req.proof_image_url;
+                              if (path) {
+                                const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
+                                if (delErr) {
+                                  toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
+                                } else {
+                                  await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                                  toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                  setSelectedImage('');
+                                  loadData();
+                                }
+                              }
+                            }}
+                          >
+                            حذف الإثبات
+                          </Button>
+                        </div>
                       )}
                     </DialogContent>
                   </Dialog>
@@ -708,6 +844,7 @@ const AdminDashboard = () => {
                           <XCircle className="w-4 h-4 mr-2" />
                           رفض
                         </Button>
+                        
                       </div>
                     </>
                   )}
@@ -747,9 +884,9 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <div className="text-sm text-muted-foreground">المبلغ الإجمالي: {req.amount} جنيه</div>
-                    <div className="text-sm text-muted-foreground">العمولة (10%): {req.commission} جنيه</div>
-                    <div className="text-2xl font-bold text-primary">الصافي: {req.net_amount} جنيه</div>
+                    <div className="text-sm text-muted-foreground">إجمالي النقاط: {req.amount}</div>
+                    <div className="text-sm text-muted-foreground">العمولة (10%): {req.commission}</div>
+                    <div className="text-2xl font-bold text-primary">الصافي: {req.net_amount} نقطة</div>
                   </div>
 
                   {req.status === 'pending' && (
@@ -817,7 +954,7 @@ const AdminDashboard = () => {
                         رقم التليفون: {doctor.phone_number || 'غير محدد'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        السعر: {doctor.consultation_fee || 0} جنيه • العنوان: {doctor.address || 'غير محدد'}
+                        السعر: {doctor.consultation_fee || 0} نقطة • العنوان: {doctor.address || 'غير محدد'}
                       </p>
                     </div>
                     <Badge variant="default">نشط</Badge>
@@ -834,7 +971,7 @@ const AdminDashboard = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1">
                       <Avatar className="w-16 h-16 border-2 border-primary/20">
-                        <AvatarImage src={doctor.image_url} />
+                        <AvatarImage src={doctor.image_url || doctor.profiles?.avatar_url || '/placeholder.svg'} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
                           {doctor.doctor_name?.charAt(0) || 'د'}
                         </AvatarFallback>
@@ -848,7 +985,7 @@ const AdminDashboard = () => {
                         </div>
                         <p className="text-sm text-muted-foreground">{doctor.specialization_ar}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          السعر: {doctor.consultation_fee || 0} جنيه
+                          السعر: {doctor.consultation_fee || 0} نقطة
                         </p>
                         <Badge variant={doctor.is_active ? "default" : "secondary"} className="mt-2">
                           {doctor.is_active ? "نشط" : "غير نشط"}
@@ -884,9 +1021,17 @@ const AdminDashboard = () => {
               <Card key={user.id} className="shadow-medium rounded-3xl border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{user.full_name}</CardTitle>
-                      <CardDescription className="text-xs">{user.phone}</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                          {user.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-lg">{user.full_name}</CardTitle>
+                        <CardDescription className="text-xs">{user.phone}</CardDescription>
+                      </div>
                     </div>
                     <Badge variant={user.user_type === 'doctor' ? 'default' : 'secondary'}>
                       {user.user_type}
@@ -896,11 +1041,25 @@ const AdminDashboard = () => {
                 <CardContent>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">الرصيد:</span>
-                    <span className="font-bold text-primary">{user.wallets?.balance || 0} ج</span>
+                    <span className="font-bold text-primary">{user.wallets?.balance || 0} نقطة</span>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            <Card className="rounded-3xl border-0 shadow-medium">
+              <CardHeader>
+                <CardTitle>تبليغات الأطباء</CardTitle>
+                <CardDescription>عرض كل التبليغات الواردة</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Fetch reports inline to keep component simple */}
+                {/* In a real app you'd lift state, but this is fine here */}
+                <ReportsList />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -911,3 +1070,81 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+// Inline component to list doctor reports
+const ReportsList = () => {
+  const [reports, setReports] = useState<any[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('doctor_reports')
+        .select('*, doctors(doctor_name, image_url), profiles:reporter_id(full_name, avatar_url)')
+        .order('created_at', { ascending: false });
+      if (error) {
+        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      } else {
+        setReports(data || []);
+      }
+    };
+    load();
+  }, [toast]);
+
+  if (reports.length === 0) {
+    return <p className="text-center text-muted-foreground py-6">لا توجد تبليغات حالياً</p>;
+  }
+
+  return (
+    <div className="rounded-2xl border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>الطبيب</TableHead>
+            <TableHead>المبلغ</TableHead>
+            <TableHead>المبلِّغ</TableHead>
+            <TableHead>التاريخ</TableHead>
+            <TableHead>التفاصيل</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {reports.map((r) => (
+            <TableRow key={r.id}>
+              <TableCell className="font-medium">
+                {r.doctors?.doctor_name}
+              </TableCell>
+              <TableCell className="max-w-[280px] truncate text-muted-foreground">
+                {r.message}
+              </TableCell>
+              <TableCell>
+                {r.profiles?.full_name}
+              </TableCell>
+              <TableCell>{new Date(r.created_at).toLocaleString('ar-EG')}</TableCell>
+              <TableCell>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="rounded-full">عرض</Button>
+                  </DialogTrigger>
+                  <DialogContent aria-describedby={undefined}>
+                    <DialogHeader>
+                      <DialogTitle>تفاصيل التبليغ</DialogTitle>
+                      <DialogDescription>معلومات التبليغ عن الطبيب</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>الطبيب:</strong> {r.doctors?.doctor_name}</p>
+                      <p><strong>المبلِّغ:</strong> {r.profiles?.full_name}</p>
+                      <p><strong>التاريخ:</strong> {new Date(r.created_at).toLocaleString('ar-EG')}</p>
+                      <div className="bg-secondary p-3 rounded-lg">
+                        <p className="whitespace-pre-wrap">{r.message}</p>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
