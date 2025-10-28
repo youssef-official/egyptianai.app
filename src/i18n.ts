@@ -100,4 +100,44 @@ export function applyDirection(lang: keyof typeof SUPPORTED_LANGS) {
 
 applyDirection(fallbackLng);
 
+async function detectLanguageByIP() {
+  if (saved) return; // respect user's saved choice
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const resp = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) throw new Error('ip api error');
+    const data = await resp.json();
+    const langStr: string | undefined = data.languages || data.language || '';
+    const browserLangs = Array.isArray((navigator as any).languages) ? (navigator as any).languages : [(navigator as any).language];
+    const candidates = [
+      ...(langStr ? String(langStr).split(',').map((s: string) => s.trim()) : []),
+      ...(browserLangs || []),
+    ].map((l: string) => l.toLowerCase());
+    const mapToSupported = (l: string): keyof typeof SUPPORTED_LANGS | null => {
+      if (l.startsWith('ar')) return 'ar';
+      if (l.startsWith('fr')) return 'fr';
+      if (l.startsWith('de')) return 'de';
+      if (l.startsWith('it')) return 'it';
+      if (l.startsWith('zh') || l.includes('cn')) return 'zh';
+      if (l.startsWith('en')) return 'en';
+      return null;
+    };
+    for (const c of candidates) {
+      const mapped = mapToSupported(c);
+      if (mapped) {
+        await i18n.changeLanguage(mapped);
+        applyDirection(mapped);
+        localStorage.setItem('lang', mapped);
+        return;
+      }
+    }
+  } catch (_) {
+    // ignore and keep fallback
+  }
+}
+
+detectLanguageByIP();
+
 export default i18n;

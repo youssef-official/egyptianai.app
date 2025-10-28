@@ -3,7 +3,6 @@ import { Home, Stethoscope, Wallet, User, Shield } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "./LanguageSwitcher";
 
 interface NavItemProps {
   icon: any;
@@ -65,9 +64,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t shadow-strong z-50 safe-area-bottom">
-      <div className="flex justify-between items-center h-20 max-w-md mx-auto px-4">
-        <LanguageSwitcher />
-        <div className="flex-1 flex justify-around">
+      <div className="flex justify-around items-center h-20 max-w-md mx-auto px-6">
         <NavItem
           icon={Home}
           label={t('common.home')}
@@ -104,7 +101,6 @@ const BottomNav = () => {
             isActive={location.pathname === "/doctor-dashboard"}
           />
         )}
-        </div>
       </div>
     </nav>
   );
