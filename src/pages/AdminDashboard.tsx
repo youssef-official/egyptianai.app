@@ -782,12 +782,14 @@ const AdminDashboard = () => {
                             size="sm"
                             className="rounded-full"
                             onClick={async () => {
-                              try {
-                                const path: string = req.proof_image_url;
-                                await supabase.storage.from('deposit-proofs').remove([path]);
+                              const path: string = req.proof_image_url;
+                              const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
+                              if (delErr) {
+                                toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
+                              } else {
                                 toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                              } catch (e: any) {
-                                toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+                                setSelectedImage('');
+                                loadData();
                               }
                             }}
                           >
@@ -828,11 +830,12 @@ const AdminDashboard = () => {
                         {req.status !== 'pending' && req.proof_image_url && (
                           <Button
                             onClick={async () => {
-                              try {
-                                await supabase.storage.from('deposit-proofs').remove([req.proof_image_url]);
+                              const { error: delErr2 } = await supabase.storage.from('deposit-proofs').remove([req.proof_image_url]);
+                              if (delErr2) {
+                                toast({ title: 'خطأ', description: delErr2.message, variant: 'destructive' });
+                              } else {
                                 toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                              } catch (e: any) {
-                                toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+                                loadData();
                               }
                             }}
                             variant="outline"
