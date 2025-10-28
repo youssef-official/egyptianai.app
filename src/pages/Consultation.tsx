@@ -188,8 +188,6 @@ const Consultation = () => {
             <AlertDescription className="text-blue-900">
               آخر استشارة كانت في:{" "}
               {new Date(lastTransaction.created_at).toLocaleString("ar-EG")}
-              <br />
-              معرف العملية: {lastTransaction.id}
             </AlertDescription>
           </Alert>
         )}
@@ -224,20 +222,7 @@ const Consultation = () => {
               <p className="text-white/90 text-base md:text-lg">
                 {doctor.specialization_ar}
               </p>
-              <div className="flex items-center gap-4 mt-4 text-xs md:text-sm flex-wrap">
-                {doctor.phone_number && (
-                  <div className="flex items-center gap-1">
-                    <Phone className="w-4 h-4" />
-                    {doctor.phone_number}
-                  </div>
-                )}
-                {doctor.address && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {doctor.address}
-                  </div>
-                )}
-              </div>
+          <div className="h-2" />
             </div>
           </div>
         </section>

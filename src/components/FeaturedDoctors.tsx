@@ -27,6 +27,8 @@ const FeaturedDoctors = () => {
       .select("*, profiles(avatar_url)")
       .eq("is_active", true)
       .eq("is_verified", true)
+      .eq('is_online', true)
+      .eq('is_busy', false)
       .order("created_at", { ascending: false })
       .limit(6);
 
