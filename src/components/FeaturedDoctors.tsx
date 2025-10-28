@@ -42,7 +42,7 @@ const FeaturedDoctors = () => {
         {doctors.map((doctor) => (
           <Card 
             key={doctor.id} 
-            className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer bg-gradient-to-b from-background to-primary/5"
+            className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer bg-gradient-to-b from-background to-primary/5 hover:scale-[1.01]"
             onClick={() => window.location.assign(`/consultation?doctorId=${doctor.id}`)}
           >
             <CardContent className="p-3">

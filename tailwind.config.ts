@@ -13,6 +13,12 @@ export default {
       },
     },
     extend: {
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        medium: "var(--shadow-medium)",
+        strong: "var(--shadow-strong)",
+        glow: "var(--shadow-glow)",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

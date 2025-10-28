@@ -16,12 +16,15 @@ const NavItem = ({ icon: Icon, label, to, isActive }: NavItemProps) => {
   return (
     <button
       onClick={() => navigate(to)}
-      className={`flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-2xl transition-all min-w-[60px] ${
+      className={`relative flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-2xl transition-all min-w-[60px] ${
         isActive
-          ? "text-primary scale-105"
+          ? "text-primary scale-105 bg-primary/10 ring-1 ring-primary/20 shadow-soft"
           : "text-muted-foreground hover:text-foreground"
       }`}
     >
+      {isActive && (
+        <span className="absolute -top-1 h-1.5 w-8 rounded-full bg-primary/60" />
+      )}
       <Icon className={`w-6 h-6 ${isActive ? "animate-pulse-glow" : ""}`} />
       <span className="text-[10px] font-medium">{label}</span>
     </button>
@@ -61,7 +64,7 @@ const BottomNav = () => {
   const isAdmin = userRoles?.some(role => role.role === 'admin');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t shadow-strong z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t shadow-strong z-50 safe-area-bottom">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
         <NavItem
           icon={Home}

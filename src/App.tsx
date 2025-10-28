@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import LoadingScreen from "./components/LoadingScreen";
+import GlobalLayout from "@/components/GlobalLayout";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -29,22 +30,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Suspense fallback={<LoadingScreen />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/doctors" element={<Doctors />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/deposit" element={<Deposit />} />
-            <Route path="/transfer" element={<Transfer />} />
-            <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/consultation" element={<Consultation />} />
-          <Route path="/ai-chat" element={<AIChat />} />
-          <Route path="/doctor-application" element={<DoctorApplication />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+          <GlobalLayout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/doctors" element={<Doctors />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/deposit" element={<Deposit />} />
+              <Route path="/transfer" element={<Transfer />} />
+              <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/consultation" element={<Consultation />} />
+              <Route path="/ai-chat" element={<AIChat />} />
+              <Route path="/doctor-application" element={<DoctorApplication />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </GlobalLayout>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
