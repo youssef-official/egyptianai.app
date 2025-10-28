@@ -144,12 +144,12 @@ const DoctorDashboard = () => {
   const handleSearch = async () => {
     if (!searchId) return;
 
-    const id = searchId.trim().toUpperCase();
+    const id = searchId.trim();
 
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select("*, profiles(*), doctors(*, medical_departments(*))")
+      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 

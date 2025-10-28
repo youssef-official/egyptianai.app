@@ -86,42 +86,15 @@ const Consultation = () => {
     setProcessing(true);
 
     try {
-      // Create transaction
-      const { data: transactionData, error: transactionError } = await supabase
-        .from("transactions")
-        .insert({
-          user_id: user.id,
-          doctor_id: doctor.id,
-          amount: doctor.consultation_fee,
-          type: "consultation",
-          status: "completed",
-        })
-        .select()
-        .single();
+      // Perform the consultation atomically via RPC (generates a transaction id and handles wallet updates)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('perform_consultation', { _doctor_id: doctor.id });
+      if (rpcError) throw rpcError;
+      const newTxId = rpcData?.[0]?.tx_id || '';
+      if (!newTxId) {
+        throw new Error('فشل إنشاء رقم العملية');
+      }
 
-      if (transactionError) throw transactionError;
-
-      // Update wallet balance
-      const { error: walletError } = await supabase
-        .from("wallets")
-        .update({
-          balance: wallet.balance - doctor.consultation_fee,
-        })
-        .eq("user_id", user.id);
-
-      if (walletError) throw walletError;
-
-      // Update doctor's earnings
-      const { error: earningsError } = await supabase
-        .from("wallets")
-        .update({
-          balance: (doctor.wallet?.balance || 0) + (doctor.consultation_fee * 0.9), // 10% commission
-        })
-        .eq("user_id", doctor.id);
-
-      if (earningsError) throw earningsError;
-
-      setTransactionId(transactionData.id);
+      setTransactionId(newTxId);
       setWallet(prev => ({ ...prev, balance: prev.balance - doctor.consultation_fee }));
 
       toast({
@@ -148,8 +121,8 @@ const Consultation = () => {
         .from("doctor_reports")
         .insert({
           doctor_id: doctor.id,
-          user_id: user.id,
-          report_text: reportText,
+          reporter_id: user.id,
+          message: reportText,
         });
 
       if (error) throw error;

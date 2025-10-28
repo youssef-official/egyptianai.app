@@ -26,6 +26,7 @@ const AdminDashboard = () => {
   const [selectedImage, setSelectedImage] = useState("");
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchKind, setSearchKind] = useState<"transaction" | "deposit" | "withdraw" | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -373,20 +374,49 @@ const AdminDashboard = () => {
 
     const id = searchId.trim().toUpperCase();
 
-    const { data, error } = await supabase
+    // Try transactions (consultations/transfers)
+    const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .select("*, profiles(*), doctors(*, medical_departments(*))")
+      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 
-    if (error || !data) {
-      setSearchResult(null);
-      toast({ title: "غير موجود", description: "لم يتم العثور على العملية في transactions", variant: "destructive" });
+    if (tx && !txError) {
+      setSearchKind("transaction");
+      setSearchResult(tx);
+      toast({ title: "تم العثور!", description: "تم العثور على العملية" });
       return;
     }
 
-    setSearchResult(data);
-    toast({ title: "تم العثور!", description: "تم العثور على العملية" });
+    // Try deposit requests
+    const { data: dep, error: depError } = await supabase
+      .from("deposit_requests")
+      .select("*, profiles(full_name, avatar_url, phone)")
+      .eq("id", id)
+      .maybeSingle();
+    if (dep && !depError) {
+      setSearchKind("deposit");
+      setSearchResult(dep);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب الإيداع" });
+      return;
+    }
+
+    // Try withdraw requests
+    const { data: wd, error: wdError } = await supabase
+      .from("withdraw_requests")
+      .select("*, doctors(doctor_name, image_url, phone_number, user_id)")
+      .eq("id", id)
+      .maybeSingle();
+    if (wd && !wdError) {
+      setSearchKind("withdraw");
+      setSearchResult(wd);
+      toast({ title: "تم العثور!", description: "تم العثور على طلب السحب" });
+      return;
+    }
+
+    setSearchKind(null);
+    setSearchResult(null);
+    toast({ title: "غير موجود", description: "لم يتم العثور على العملية", variant: "destructive" });
   };
 
   return (
@@ -458,63 +488,131 @@ const AdminDashboard = () => {
             </div>
             {searchResult && (
               <div className="p-5 bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-2xl space-y-3 animate-fade-in border border-primary/20">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-primary">
-                    <AvatarImage src={searchResult.profiles?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
-                      {searchResult.profiles?.full_name?.charAt(0) || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
-                    <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">رقم العملية</p>
-                    <p className="font-bold text-primary">{searchResult.id}</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">المبلغ</p>
-                    <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">التاريخ</p>
-                    <p className="font-bold">{new Date(searchResult.created_at).toLocaleString('ar-EG', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</p>
-                  </div>
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground">النوع</p>
-                    <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
-                  </div>
-                </div>
-                {searchResult.doctors && (
-                  <div className="bg-background p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                {searchKind === 'transaction' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
+                        <AvatarImage src={searchResult.sender?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                          {searchResult.sender?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.sender?.full_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.sender?.phone || 'غير محدد'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم العملية</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">المبلغ</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">التاريخ</p>
+                        <p className="font-bold">{new Date(searchResult.created_at).toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">النوع</p>
+                        <p className="font-bold">{searchResult.type === 'consultation' ? 'استشارة' : searchResult.type}</p>
+                      </div>
+                    </div>
+                    {searchResult.doctor && (
+                      <div className="bg-background p-3 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12 border-2 border-primary/20">
+                            <AvatarImage src={searchResult.doctor?.image_url} />
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                              {searchResult.doctor?.doctor_name?.charAt(0) || 'د'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold">{searchResult.doctor?.doctor_name}</p>
+                            <p className="text-xs text-muted-foreground">{searchResult.doctor?.medical_departments?.name_ar}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {searchResult.description && (
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground text-sm">الوصف</p>
+                        <p className="font-medium">{searchResult.description}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {searchKind === 'deposit' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
+                        <AvatarImage src={searchResult.profiles?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
+                          {searchResult.profiles?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.profiles?.full_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.profiles?.phone || 'غير محدد'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم الطلب</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">المبلغ</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الحالة</p>
+                        <p className="font-bold">{searchResult.status}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">طريقة الدفع</p>
+                        <p className="font-bold">{searchResult.payment_method}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {searchKind === 'withdraw' && (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary">
                         <AvatarImage src={searchResult.doctors?.image_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-xl">
                           {searchResult.doctors?.doctor_name?.charAt(0) || 'د'}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-semibold">{searchResult.doctors?.doctor_name}</p>
-                        <p className="text-xs text-muted-foreground">{searchResult.doctors?.medical_departments?.name_ar}</p>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{searchResult.doctors?.doctor_name}</h3>
+                        <p className="text-sm text-muted-foreground">📱 {searchResult.doctors?.phone_number || 'غير محدد'}</p>
                       </div>
                     </div>
-                  </div>
-                )}
-                {searchResult.description && (
-                  <div className="bg-background p-3 rounded-lg">
-                    <p className="text-muted-foreground text-sm">الوصف</p>
-                    <p className="font-medium">{searchResult.description}</p>
-                  </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">رقم الطلب</p>
+                        <p className="font-bold text-primary">{searchResult.id}</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الإجمالي</p>
+                        <p className="font-bold text-primary">{searchResult.amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الصافي</p>
+                        <p className="font-bold">{searchResult.net_amount} نقطة</p>
+                      </div>
+                      <div className="bg-background p-3 rounded-lg">
+                        <p className="text-muted-foreground">الحالة</p>
+                        <p className="font-bold">{searchResult.status}</p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
