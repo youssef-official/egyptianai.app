@@ -120,7 +120,7 @@ const DoctorDashboard = () => {
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select("*, profiles(full_name, avatar_url, phone)")
+        .select("*, sender:profiles!transactions_user_id_fkey(full_name, avatar_url, phone, email)")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -568,15 +568,15 @@ const DoctorDashboard = () => {
                   {transactions.map((transaction) => (
                     <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
                       <Avatar className="w-12 h-12 border-2 border-primary/20">
-                        <AvatarImage src={transaction.profiles?.avatar_url} />
+                        <AvatarImage src={transaction.sender?.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
-                          {transaction.profiles?.full_name?.charAt(0) || 'م'}
+                          {transaction.sender?.full_name?.charAt(0) || 'م'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-semibold">{transaction.profiles?.full_name}</p>
+                        <p className="font-semibold">{transaction.sender?.full_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {transaction.profiles?.phone && `📱 ${transaction.profiles?.phone}`}
+                          {transaction.sender?.phone && `📱 ${transaction.sender?.phone}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleString('ar-EG')}
