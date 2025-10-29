@@ -434,6 +434,129 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Fix deposit_requests.proof_image_url to be nullable (if table exists with NOT NULL constraint)
+DO $$ 
+BEGIN
+  -- Check if column exists and is NOT NULL, then make it nullable
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'deposit_requests' 
+    AND column_name = 'proof_image_url'
+    AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.deposit_requests ALTER COLUMN proof_image_url DROP NOT NULL;
+  END IF;
+END $$;
+
+-- Storage buckets (if they don't exist)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('profile-images', 'profile-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('deposit-proofs', 'deposit-proofs', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('doctor-documents', 'doctor-documents', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for profile images
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Anyone can view profile images'
+  ) THEN
+    CREATE POLICY "Anyone can view profile images" ON storage.objects FOR SELECT USING (bucket_id = 'profile-images');
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can upload their own profile image'
+  ) THEN
+    CREATE POLICY "Users can upload their own profile image" ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'profile-images' 
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can update their own profile image'
+  ) THEN
+    CREATE POLICY "Users can update their own profile image" ON storage.objects FOR UPDATE
+    USING (
+      bucket_id = 'profile-images' 
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can delete their own profile image'
+  ) THEN
+    CREATE POLICY "Users can delete their own profile image" ON storage.objects FOR DELETE
+    USING (
+      bucket_id = 'profile-images' 
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+  END IF;
+END $$;
+
+-- Storage policies for deposit proofs
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can upload their own deposit proofs'
+  ) THEN
+    CREATE POLICY "Users can upload their own deposit proofs" ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can view their own deposit proofs'
+  ) THEN
+    CREATE POLICY "Users can view their own deposit proofs" ON storage.objects FOR SELECT
+    USING (bucket_id = 'deposit-proofs' AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin')));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Admins can view all deposit proofs'
+  ) THEN
+    CREATE POLICY "Admins can view all deposit proofs" ON storage.objects FOR SELECT
+    USING (bucket_id = 'deposit-proofs' AND has_role(auth.uid(), 'admin'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Admins can delete deposit proofs'
+  ) THEN
+    CREATE POLICY "Admins can delete deposit proofs" ON storage.objects FOR DELETE
+    USING (bucket_id = 'deposit-proofs' AND has_role(auth.uid(), 'admin'));
+  END IF;
+END $$;
+
+-- Storage policies for doctor documents
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can upload their doctor documents'
+  ) THEN
+    CREATE POLICY "Users can upload their doctor documents" ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'doctor-documents' 
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can view their own doctor documents'
+  ) THEN
+    CREATE POLICY "Users can view their own doctor documents" ON storage.objects FOR SELECT
+    USING (
+      bucket_id = 'doctor-documents' 
+      AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin'))
+    );
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Admins can delete doctor documents'
+  ) THEN
+    CREATE POLICY "Admins can delete doctor documents" ON storage.objects FOR DELETE
+    USING (
+      bucket_id = 'doctor-documents' 
+      AND has_role(auth.uid(), 'admin')
+    );
+  END IF;
+END $$;
+
 -- RPCs
 CREATE OR REPLACE FUNCTION public.generate_op_id(prefix text)
 RETURNS text LANGUAGE SQL AS $$

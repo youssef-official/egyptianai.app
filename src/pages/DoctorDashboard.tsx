@@ -120,20 +120,32 @@ const DoctorDashboard = () => {
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select(`
-          *,
-          sender:profiles!user_id(
-            full_name,
-            avatar_url,
-            phone,
-            email
-          )
-        `)
+        .select("*")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      setTransactions(transactionsData || []);
+      // Fetch user profiles separately for each transaction
+      if (transactionsData) {
+        const transactionsWithProfiles = await Promise.all(
+          transactionsData.map(async (tx) => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url, phone, email, id")
+              .eq("id", tx.user_id)
+              .single();
+            
+            return {
+              ...tx,
+              sender: profile || null
+            };
+          })
+        );
+        
+        setTransactions(transactionsWithProfiles);
+      } else {
+        setTransactions([]);
+      }
 
       // Get withdraw requests
       const { data: withdrawData } = await supabase
@@ -157,23 +169,19 @@ const DoctorDashboard = () => {
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select(`
-        *,
-        sender:profiles!user_id(
-          full_name,
-          avatar_url,
-          phone,
-          email
-        ),
-        doctor:doctors(
-          *,
-          medical_departments(*)
-        )
-      `)
+      .select("*")
       .eq("id", id)
       .maybeSingle();
-
+    
     if (tx) {
+      // Fetch user profile separately
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, phone, email, id")
+        .eq("id", tx.user_id)
+        .single();
+      
+      tx.sender = profile || null;
       setSearchKind("transaction");
       setSearchResult(tx);
       toast({ title: "تم العثور!", description: "تم العثور على العملية" });
