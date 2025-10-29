@@ -549,18 +549,18 @@ const DoctorDashboard = () => {
               <div className="mt-4 p-4 bg-secondary rounded-lg space-y-2">
                 {searchKind === 'transaction' && (
                   <>
-                    <div className=\"flex items-center gap-3 mb-3\">
-                      <Avatar className=\"w-12 h-12 border-2 border-primary/20\">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
                         <AvatarImage src={searchResult.sender?.avatar_url} />
-                        <AvatarFallback className=\"bg-gradient-to-br from-primary to-primary-light text-white\">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
                           {searchResult.sender?.full_name?.charAt(0) || 'م'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className=\"font-semibold\">{searchResult.sender?.full_name}</p>
-                        <p className=\"text-sm text-muted-foreground\">
+                        <p className="font-semibold">{searchResult.sender?.full_name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {searchResult.sender?.phone && `📱 ${searchResult.sender?.phone}`}
-                          {searchResult.sender?.email && <span className=\"block\">{searchResult.sender?.email}</span>}
+                          {searchResult.sender?.email && <span className="block">{searchResult.sender?.email}</span>}
                         </p>
                       </div>
                     </div>
