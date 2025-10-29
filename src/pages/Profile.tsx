@@ -11,7 +11,6 @@ import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesI
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -37,7 +36,6 @@ const Profile = () => {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    
     return !!data;
   };
 
@@ -62,7 +60,7 @@ const Profile = () => {
       .eq("user_id", session.user.id)
       .single();
 
-    if (profileData?.user_type === 'doctor') {
+    if (profileData?.user_type === "doctor") {
       const { data: doctorData } = await supabase
         .from("doctors")
         .select("*")
@@ -94,17 +92,17 @@ const Profile = () => {
     setUploading(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('profile-images')
+        .from("profile-images")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('profile-images')
+        .from("profile-images")
         .getPublicUrl(fileName);
 
       await supabase
@@ -180,7 +178,11 @@ const Profile = () => {
             <ArrowLeft className="w-4 h-4" />
             العودة
           </Button>
-              {/* Profile Header Card */}\n        <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">    <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
+        </div>
+
+        {/* Profile Header Card */}
+        <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
           <CardContent className="relative pt-0 pb-6">
             <div className="flex flex-col items-center -mt-16">
               <div className="relative">
@@ -205,32 +207,30 @@ const Profile = () => {
                   />
                 </label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
                 {doctor?.is_verified && (
                   <img src={verifiedBadge} alt="موثق" className="w-7 h-7 mt-4" />
                 )}
               </div>
-              <Badge className="mt-2" variant={profile?.user_type === 'doctor' ? 'default' : 'secondary'}>
-                {profile?.user_type === 'doctor' ? '👨‍⚕️ دكتور' : '👤 مستخدم'}
+
+              <Badge className="mt-2" variant={profile?.user_type === "doctor" ? "default" : "secondary"}>
+                {profile?.user_type === "doctor" ? "👨‍⚕️ دكتور" : "👤 مستخدم"}
               </Badge>
-              
-              {/* Quick Actions */}
-              <div className="flex gap-2 mt-4">
-                {profile?.user_type === 'doctor' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/doctor-dashboard")}
-                    className="gap-2"
-                  >
-                    <Stethoscope className="w-4 h-4" />
-                    لوحة الطبيب
-                  </Button>
-                )}
-              </div>
-              
+
+              {profile?.user_type === "doctor" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/doctor-dashboard")}
+                  className="gap-2 mt-4"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  لوحة الطبيب
+                </Button>
+              )}
+
               <div className="flex items-center gap-2 mt-4 bg-secondary px-4 py-2 rounded-full">
                 <span className="text-sm text-muted-foreground">معرف المستخدم:</span>
                 <code className="text-xs font-mono">{user?.id?.substring(0, 8)}...</code>
@@ -246,7 +246,25 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
-        {/* Wallet Info - Moved under Profile Card */}\n        {profile?.user_type !== 'doctor' && (\n          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">\n          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">\n            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>\n          </CardHeader>\n          <CardContent className="pt-6">\n            <div className="text-center">\n              <div className="text-4xl font-bold text-primary">\n                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>\n              </div>\n            </div>\n          </CardContent>\n        </Card>\n        )}\n\n        {/* Verification Card for Doctors */}\n        {profile?.user_type === 'doctor' && !doctor?.is_verified && (
+
+        {/* Wallet Info */}
+        {profile?.user_type !== "doctor" && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+              <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary">
+                  {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Verification Card */}
+        {profile?.user_type === "doctor" && !doctor?.is_verified && (
           <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0 border-primary/20">
             <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -259,8 +277,8 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 لا يمكنك الدخول كطبيب قبل إرسال مستنداتك والموافقة عليها.
               </p>
-              <Button 
-                onClick={() => navigate('/doctor-application')}
+              <Button
+                onClick={() => navigate("/doctor-application")}
                 className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full"
               >
                 إرسال المستندات للتوثيق
@@ -349,7 +367,7 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       <BottomNav />
     </div>
   );
