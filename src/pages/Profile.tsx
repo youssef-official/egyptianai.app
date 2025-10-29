@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesIcon } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesIcon, HeartHandshake } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
@@ -182,6 +182,22 @@ const Profile = () => {
           </Button>
         </div>
 
+        {/* Wallet Info - Moved to Top */}
+        {profile?.user_type !== 'doctor' && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary">
+                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        )}
+
         {/* Profile Header Card */}
         <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">
           <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
@@ -275,21 +291,13 @@ const Profile = () => {
           </Card>
         )}
 
-        {/* Wallet Info */}
-        {profile?.user_type !== 'doctor' && (
-          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
-            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
+        {/* Social Medical Program Button */}
+        <a href="https://social.ymoo.site" target="_blank" rel="noopener noreferrer">
+          <Button className="w-full mb-6 shadow-medium animate-fade-in rounded-3xl border-0 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 h-12 text-lg">
+            <HeartHandshake className="w-5 h-5 ml-2" />
+            يمكنك الآن تجربة برنامج التفاصيل الاجتماعي الطبي من هنا
+          </Button>
+        </a>
 
         {/* Support Section */}
         <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
