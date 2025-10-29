@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesIcon, FlaskConical } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesIcon, FlaskConical, HeartHandshake } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
@@ -38,11 +38,24 @@ const Profile = () => {
 
     setUser(session.user);
 
-    const { data: profileData } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
-    const { data: walletData } = await supabase.from("wallets").select("*").eq("user_id", session.user.id).single();
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
 
-    if (profileData?.user_type === "doctor") {
-      const { data: doctorData } = await supabase.from("doctors").select("*").eq("user_id", session.user.id).single();
+    const { data: walletData } = await supabase
+      .from("wallets")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (profileData?.user_type === 'doctor') {
+      const { data: doctorData } = await supabase
+        .from("doctors")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
       setDoctor(doctorData);
     }
 
@@ -53,22 +66,38 @@ const Profile = () => {
     setLoading(false);
   };
 
-  const handleAvatarUpload = async (e: any) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "خطأ", description: "حجم الصورة يجب أن يكون أقل من 2MB", variant: "destructive" });
+      toast({
+        title: "خطأ",
+        description: "حجم الصورة يجب أن يكون أقل من 2MB",
+        variant: "destructive",
+      });
       return;
     }
 
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("profile-images").upload(fileName, file);
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(fileName, file);
+
       if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(fileName);
-      await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", user.id);
+
+      const { data: urlData } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(fileName);
+
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: urlData.publicUrl })
+        .eq("id", user.id);
+
       toast({ title: "تم!", description: "تم تحديث الصورة الشخصية" });
       loadProfile();
     } catch (error: any) {
@@ -79,9 +108,16 @@ const Profile = () => {
   };
 
   const handleUpdateProfile = async () => {
-    await supabase.from("profiles").update({ full_name: fullName, phone: phone }).eq("id", user.id);
-    toast({ title: "تم التحديث!", description: "تم تحديث البيانات بنجاح" });
-    loadProfile();
+    try {
+      await supabase
+        .from("profiles")
+        .update({ full_name: fullName, phone: phone })
+        .eq("id", user.id);
+      toast({ title: "تم التحديث!", description: "تم تحديث البيانات بنجاح" });
+      loadProfile();
+    } catch (error: any) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    }
   };
 
   const copyUserId = () => {
@@ -104,8 +140,7 @@ const Profile = () => {
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            العودة
+            <ArrowLeft className="w-4 h-4" /> العودة
           </Button>
         </div>
 
@@ -121,37 +156,32 @@ const Profile = () => {
                     {profile?.full_name?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer">
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-all shadow-medium"
+                >
                   <Upload className="w-5 h-5" />
-                  <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={uploading}
+                  />
                 </label>
               </div>
-
-              <div className="flex items-center gap-2 mt-4">
-                <h2 className="text-2xl font-bold">{profile?.full_name}</h2>
-                {doctor?.is_verified && <img src={verifiedBadge} alt="موثق" className="w-6 h-6" />}
+              
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
+                {doctor?.is_verified && (
+                  <img src={verifiedBadge} alt="موثق" className="w-7 h-7 mt-4" />
+                )}
               </div>
-              <Badge className="mt-2" variant={profile?.user_type === "doctor" ? "default" : "secondary"}>
-                {profile?.user_type === "doctor" ? "👨‍⚕️ دكتور" : "👤 مستخدم"}
+              <Badge className="mt-2" variant={profile?.user_type === 'doctor' ? 'default' : 'secondary'}>
+                {profile?.user_type === 'doctor' ? '👨‍⚕️ دكتور' : '👤 مستخدم'}
               </Badge>
 
-              {/* Wallet Section under avatar */}
-              <div className="mt-4 bg-secondary/40 px-6 py-3 rounded-full text-center">
-                <span className="text-sm text-muted-foreground">الرصيد الحالي:</span>
-                <span className="ml-2 text-lg font-bold text-primary">
-                  {wallet?.balance?.toFixed(0) || "0"} نقطة
-                </span>
-              </div>
-
-              {/* Try Social Button */}
-              <Button
-                onClick={() => (window.location.href = "https://social.egyptianai.app")}
-                className="mt-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-md"
-              >
-                جرب الآن برنامج التواصل الاجتماعي الطبي
-              </Button>
-
-              {/* User ID */}
               <div className="flex items-center gap-2 mt-4 bg-secondary px-4 py-2 rounded-full">
                 <span className="text-sm text-muted-foreground">معرف المستخدم:</span>
                 <code className="text-xs font-mono">{user?.id?.substring(0, 8)}...</code>
@@ -163,21 +193,62 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* باقي الصفحة كما هي */}
-        {/* Support Section */}
-        <Card className="shadow-medium rounded-3xl border-0 mt-6">
-          <CardHeader>
-            <CardTitle>الدعم والمساعدة</CardTitle>
-            <CardDescription>تواصل معنا عبر البريد</CardDescription>
+        {/* Wallet moved here */}
+        {wallet && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+              <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary">
+                  {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Social Media Section */}
+        <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 rounded-t-3xl">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <HeartHandshake className="w-5 h-5 text-purple-600" />
+              يمكنك الآن تجربة برنامج التواصل الاجتماعي الطبي
+            </CardTitle>
+            <CardDescription>تواصل مع الأطباء والمستخدمين في شبكة طبية آمنة</CardDescription>
           </CardHeader>
-          <CardContent>
-            <a href="mailto:admin@egyptianai.app" className="text-primary underline">
-              admin@egyptianai.app
-            </a>
+          <CardContent className="pt-6 space-y-4 text-center">
+            <Button 
+              onClick={() => navigate("/social")}
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full h-11 text-white"
+            >
+              جرّب الآن
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Volunteer Section */}
+        <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 rounded-t-3xl">
+            <CardTitle className="text-lg flex items-center gap-2">🤝 الدخول كمتطوع</CardTitle>
+            <CardDescription>ساعد المرضى أو الأطباء بدون مقابل</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4 text-center">
+            <Button 
+              onClick={() => navigate("/volunteer")}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full h-11 text-white"
+            >
+              الدخول كمتطوع
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* باقي الأقسام زي ما كانت */}
+        {/* Verification, AI Analyzer, Edit Profile, Support, BottomNav */}
+
+        <BottomNav />
       </div>
-      <BottomNav />
     </div>
   );
 };
