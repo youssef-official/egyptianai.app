@@ -132,19 +132,25 @@ const AdminDashboard = () => {
       try {
         let filePath = depositRequest.proof_image_url;
         // Extract the file path from URL - handle different URL formats
+        // For R2 paths, they should be like: deposit-proofs/user-id/filename.jpg
+        // For old Supabase URLs, extract the path
         if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
-          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+          filePath = 'deposit-proofs/' + filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
         } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
-          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
-        } else if (filePath.includes('deposit-proofs/')) {
-          const parts = filePath.split('deposit-proofs/');
-          filePath = parts[parts.length - 1];
-        } else if (!filePath.includes('/')) {
-          // Already a simple path
+          filePath = 'deposit-proofs/' + filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+        } else if (filePath.startsWith('deposit-proofs/')) {
+          // Already in R2 format, use as-is
           filePath = filePath;
+        } else if (filePath.includes('deposit-proofs/')) {
+          // Extract from old format
+          const parts = filePath.split('deposit-proofs/');
+          filePath = 'deposit-proofs/' + parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Just filename, add prefix
+          filePath = `deposit-proofs/${filePath}`;
         } else {
-          // Try to extract UUID or filename from path
-          filePath = filePath.split('/').pop() || filePath;
+          // Try to extract and format properly
+          filePath = filePath.startsWith('deposit-proofs/') ? filePath : `deposit-proofs/${filePath}`;
         }
         
         // Delete the image from storage
@@ -189,19 +195,25 @@ const AdminDashboard = () => {
       try {
         let filePath = depositRequest.proof_image_url;
         // Extract the file path from URL - handle different URL formats
+        // For R2 paths, they should be like: deposit-proofs/user-id/filename.jpg
+        // For old Supabase URLs, extract the path
         if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
-          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+          filePath = 'deposit-proofs/' + filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
         } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
-          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
-        } else if (filePath.includes('deposit-proofs/')) {
-          const parts = filePath.split('deposit-proofs/');
-          filePath = parts[parts.length - 1];
-        } else if (!filePath.includes('/')) {
-          // Already a simple path
+          filePath = 'deposit-proofs/' + filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+        } else if (filePath.startsWith('deposit-proofs/')) {
+          // Already in R2 format, use as-is
           filePath = filePath;
+        } else if (filePath.includes('deposit-proofs/')) {
+          // Extract from old format
+          const parts = filePath.split('deposit-proofs/');
+          filePath = 'deposit-proofs/' + parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Just filename, add prefix
+          filePath = `deposit-proofs/${filePath}`;
         } else {
-          // Try to extract UUID or filename from path
-          filePath = filePath.split('/').pop() || filePath;
+          // Try to extract and format properly
+          filePath = filePath.startsWith('deposit-proofs/') ? filePath : `deposit-proofs/${filePath}`;
         }
         
         // Delete the image from storage
@@ -871,9 +883,13 @@ const AdminDashboard = () => {
                                   // Extract the file path from URL if it's a full URL
                                   let filePath = path;
                                   if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
-                                    filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                                    filePath = 'deposit-proofs/' + path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                                  } else if (path.startsWith('deposit-proofs/')) {
+                                    filePath = path; // Already correct format
                                   } else if (path.includes('deposit-proofs/')) {
-                                    filePath = path.split('deposit-proofs/')[1];
+                                    filePath = 'deposit-proofs/' + path.split('deposit-proofs/')[1];
+                                  } else {
+                                    filePath = `deposit-proofs/${filePath}`;
                                   }
                                   
                                   // Delete from storage
@@ -921,16 +937,18 @@ const AdminDashboard = () => {
                             // Extract the file path from URL - handle different URL formats
                             let filePath = path;
                             if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
-                              filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                              filePath = 'deposit-proofs/' + path.split('/storage/v1/object/public/deposit-proofs/')[1];
                             } else if (path.includes('/storage/v1/object/sign/deposit-proofs/')) {
-                              filePath = path.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+                              filePath = 'deposit-proofs/' + path.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+                            } else if (path.startsWith('deposit-proofs/')) {
+                              filePath = path; // Already in correct format
                             } else if (path.includes('deposit-proofs/')) {
                               const parts = path.split('deposit-proofs/');
-                              filePath = parts[parts.length - 1];
+                              filePath = 'deposit-proofs/' + parts[parts.length - 1];
                             } else if (!path.includes('/')) {
-                              filePath = path;
+                              filePath = `deposit-proofs/${path}`;
                             } else {
-                              filePath = path.split('/').pop() || path;
+                              filePath = `deposit-proofs/${path.split('/').pop() || path}`;
                             }
                             
                             // Delete from storage

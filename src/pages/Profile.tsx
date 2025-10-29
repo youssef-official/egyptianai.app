@@ -11,6 +11,7 @@ import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesI
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
+import { uploadToR2, getR2SignedUrl } from "@/lib/r2-storage";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -22,6 +23,7 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [copiedId, setCopiedId] = useState(false);
   const [doctor, setDoctor] = useState<any>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -50,6 +52,25 @@ const Profile = () => {
     setWallet(walletData);
     setFullName(profileData?.full_name || "");
     setPhone(profileData?.phone || "");
+    
+    // Load avatar URL - if it's an R2 path, get signed URL, otherwise use as-is
+    if (profileData?.avatar_url) {
+      if (profileData.avatar_url.startsWith('http') || profileData.avatar_url.startsWith('/')) {
+        setAvatarUrl(profileData.avatar_url);
+      } else {
+        // It's an R2 path, get signed URL
+        try {
+          const signedUrl = await getR2SignedUrl(profileData.avatar_url, 3600);
+          setAvatarUrl(signedUrl);
+        } catch (error) {
+          console.error('Error loading avatar:', error);
+          setAvatarUrl('');
+        }
+      }
+    } else {
+      setAvatarUrl('');
+    }
+    
     setLoading(false);
   };
 
@@ -58,6 +79,65 @@ const Profile = () => {
     setCopiedId(true);
     toast({ title: "تم النسخ!", description: "تم نسخ معرف المستخدم" });
     setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "خطأ", description: "الرجاء اختيار صورة صحيحة", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast({ title: "خطأ", description: "حجم الصورة كبير جداً (الحد الأقصى 5MB)", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('المستخدم غير مسجل الدخول');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+      const path = `profile-images/${currentUser.id}/${fileName}`;
+
+      // Delete old avatar if exists
+      if (profile?.avatar_url && !profile.avatar_url.startsWith('http') && !profile.avatar_url.startsWith('/')) {
+        try {
+          const { deleteFromR2 } = await import('@/lib/r2-storage');
+          await deleteFromR2(profile.avatar_url);
+        } catch (error) {
+          console.error('Error deleting old avatar:', error);
+        }
+      }
+
+      // Upload new avatar
+      await uploadToR2(file, path);
+
+      // Update database
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: path })
+        .eq('id', currentUser.id);
+
+      if (updateError) throw updateError;
+
+      // Get signed URL for immediate display
+      const signedUrl = await getR2SignedUrl(path, 3600);
+      setAvatarUrl(signedUrl);
+      
+      // Reload profile
+      await loadProfile();
+
+      toast({ title: "تم بنجاح!", description: "تم تحديث صورة البروفايل" });
+    } catch (error: any) {
+      toast({ title: "خطأ", description: error.message || "فشل في رفع الصورة", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -82,12 +162,29 @@ const Profile = () => {
           <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
           <CardContent className="relative pt-0 pb-6">
             <div className="flex flex-col items-center -mt-16">
-              <div className="relative">
+              <div className="relative group">
                 <Avatar className="w-32 h-32 border-4 border-background shadow-strong">
-                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarImage src={avatarUrl || profile?.avatar_url} />
                   <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
+                <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                  {uploading ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-6 h-6 text-white" />
+                  )}
+                </label>
               </div>
+              {uploading && (
+                <p className="text-sm text-muted-foreground mt-2">جاري رفع الصورة...</p>
+              )}
 
               <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
               <Badge className="mt-2" variant={profile?.user_type === "doctor" ? "default" : "secondary"}>

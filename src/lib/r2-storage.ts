@@ -107,3 +107,24 @@ export function getR2PublicUrl(path: string, customDomain?: string): string {
   // Fallback to signed URL (you should configure a custom domain for public access)
   return path;
 }
+
+/**
+ * Helper function to get image URL (handles both R2 paths and full URLs)
+ * Use this for displaying images throughout the app
+ */
+export async function getImageUrl(path: string | null | undefined): Promise<string | null> {
+  if (!path) return null;
+  
+  // If it's already a full URL (http/https) or local path, return as-is
+  if (path.startsWith('http') || path.startsWith('/')) {
+    return path;
+  }
+  
+  // Otherwise, it's an R2 path - get signed URL
+  try {
+    return await getR2SignedUrl(path, 3600);
+  } catch (error) {
+    console.error('Error getting image URL:', error);
+    return null;
+  }
+}
