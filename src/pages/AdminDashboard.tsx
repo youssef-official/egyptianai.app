@@ -127,8 +127,20 @@ const AdminDashboard = () => {
 
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
-      // Delete the image from storage
-      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+      try {
+        // Extract the file path from URL if it's a full URL
+        let filePath = depositRequest.proof_image_url;
+        if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('deposit-proofs/')) {
+          filePath = filePath.split('deposit-proofs/')[1];
+        }
+        
+        // Delete the image from storage
+        await supabase.storage.from('deposit-proofs').remove([filePath]);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
     }
 
     await supabase
@@ -158,8 +170,20 @@ const AdminDashboard = () => {
   const handleDepositReject = async (requestId: string) => {
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
-      // Delete the image from storage
-      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+      try {
+        // Extract the file path from URL if it's a full URL
+        let filePath = depositRequest.proof_image_url;
+        if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('deposit-proofs/')) {
+          filePath = filePath.split('deposit-proofs/')[1];
+        }
+        
+        // Delete the image from storage
+        await supabase.storage.from('deposit-proofs').remove([filePath]);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
     }
     
     await supabase
@@ -391,7 +415,19 @@ const AdminDashboard = () => {
     // Try transactions (consultations/transfers)
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!user_id(*), doctor:doctors(*, medical_departments(*))")
+      .select(`
+        *,
+        sender:profiles!user_id(
+          full_name,
+          avatar_url,
+          phone,
+          email
+        ),
+        doctor:doctors(
+          *,
+          medical_departments(*)
+        )
+      `)
       .eq("id", id)
       .maybeSingle();
 
@@ -798,14 +834,37 @@ const AdminDashboard = () => {
                             onClick={async () => {
                               const path: string = req.proof_image_url;
                               if (path) {
-                                const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
-                                if (delErr) {
-                                  toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
-                                } else {
-                                  await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
-                                  toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                                  setSelectedImage('');
-                                  loadData();
+                                try {
+                                  // Extract the file path from URL if it's a full URL
+                                  let filePath = path;
+                                  if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
+                                    filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                                  } else if (path.includes('deposit-proofs/')) {
+                                    filePath = path.split('deposit-proofs/')[1];
+                                  }
+                                  
+                                  // Delete from storage
+                                  const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+                                  
+                                  if (delErr) {
+                                    console.error('Storage delete error:', delErr);
+                                    toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
+                                  } else {
+                                    // Update database
+                                    const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                                    
+                                    if (dbErr) {
+                                      console.error('Database update error:', dbErr);
+                                      toast({ title: 'خطأ في تحديث قاعدة البيانات', description: dbErr.message, variant: 'destructive' });
+                                    } else {
+                                      toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                      setSelectedImage('');
+                                      loadData();
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.error('Delete error:', error);
+                                  toast({ title: 'خطأ', description: 'حدث خطأ أثناء حذف الصورة', variant: 'destructive' });
                                 }
                               }
                             }}

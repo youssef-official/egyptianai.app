@@ -120,7 +120,15 @@ const DoctorDashboard = () => {
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select("*, sender:profiles!user_id(full_name, avatar_url, phone, email)")
+        .select(`
+          *,
+          sender:profiles!user_id(
+            full_name,
+            avatar_url,
+            phone,
+            email
+          )
+        `)
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -149,7 +157,19 @@ const DoctorDashboard = () => {
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!user_id(*), doctor:doctors(*, medical_departments(*))")
+      .select(`
+        *,
+        sender:profiles!user_id(
+          full_name,
+          avatar_url,
+          phone,
+          email
+        ),
+        doctor:doctors(
+          *,
+          medical_departments(*)
+        )
+      `)
       .eq("id", id)
       .maybeSingle();
 
@@ -529,14 +549,28 @@ const DoctorDashboard = () => {
               <div className="mt-4 p-4 bg-secondary rounded-lg space-y-2">
                 {searchKind === 'transaction' && (
                   <>
-                    <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
+                    <div className=\"flex items-center gap-3 mb-3\">
+                      <Avatar className=\"w-12 h-12 border-2 border-primary/20\">
+                        <AvatarImage src={searchResult.sender?.avatar_url} />
+                        <AvatarFallback className=\"bg-gradient-to-br from-primary to-primary-light text-white\">
+                          {searchResult.sender?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className=\"font-semibold\">{searchResult.sender?.full_name}</p>
+                        <p className=\"text-sm text-muted-foreground\">
+                          {searchResult.sender?.phone && `📱 ${searchResult.sender?.phone}`}
+                          {searchResult.sender?.email && <span className=\"block\">{searchResult.sender?.email}</span>}
+                        </p>
+                      </div>
+                    </div>
                         <p><strong>النقاط:</strong> {searchResult.amount} نقطة</p>
                     <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
                     {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
-                    {searchResult.doctors && (
+                    {searchResult.doctor && (
                       <div className="mt-2 p-2 rounded-md bg-background">
                         <p className="font-semibold">بيانات الطبيب</p>
-                        <p className="text-sm">{searchResult.doctors?.doctor_name} • {searchResult.doctors?.medical_departments?.name_ar}</p>
+                        <p className="text-sm">{searchResult.doctor?.doctor_name} • {searchResult.doctor?.medical_departments?.name_ar}</p>
                       </div>
                     )}
                   </>
