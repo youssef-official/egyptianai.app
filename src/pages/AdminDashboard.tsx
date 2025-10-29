@@ -391,7 +391,7 @@ const AdminDashboard = () => {
     // Try transactions (consultations/transfers)
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .select("*, sender:profiles!user_id(*), doctor:doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 
@@ -789,7 +789,7 @@ const AdminDashboard = () => {
                       {selectedImage && (
                         <img src={selectedImage} alt="Proof" className="w-full rounded-lg" />
                       )}
-                      {req.status !== 'pending' && req.proof_image_url && (
+                      {req.proof_image_url && (
                         <div className="mt-4 flex justify-end">
                           <Button
                             variant="destructive"

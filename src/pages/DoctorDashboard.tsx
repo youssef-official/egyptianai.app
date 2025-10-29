@@ -120,7 +120,7 @@ const DoctorDashboard = () => {
     if (doctorData) {
       const { data: transactionsData } = await supabase
         .from("transactions")
-        .select("*, sender:profiles!transactions_user_id_fkey(full_name, avatar_url, phone, email)")
+        .select("*, sender:profiles!user_id(full_name, avatar_url, phone, email)")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -149,7 +149,7 @@ const DoctorDashboard = () => {
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .select("*, sender:profiles!user_id(*), doctor:doctors(*, medical_departments(*))")
       .eq("id", id)
       .maybeSingle();
 
