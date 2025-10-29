@@ -629,6 +629,9 @@ const DoctorDashboard = () => {
                           <p className="text-xs text-muted-foreground font-mono">
                             رقم العملية: {transaction.id}
                           </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            ID المستخدم: {transaction.user_id}
+                          </p>
                           {transaction.sender?.phone && (
                             <p className="text-xs text-muted-foreground">
                               📱 {transaction.sender.phone}

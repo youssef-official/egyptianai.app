@@ -902,6 +902,60 @@ const AdminDashboard = () => {
                     </DialogContent>
                   </Dialog>
 
+                  {(req.status === 'approved' || req.status === 'rejected') && req.proof_image_url && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full rounded-full"
+                      onClick={async () => {
+                        const path: string = req.proof_image_url || '';
+                        if (path) {
+                          try {
+                            // Extract the file path from URL - handle different URL formats
+                            let filePath = path;
+                            if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
+                              filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                            } else if (path.includes('/storage/v1/object/sign/deposit-proofs/')) {
+                              filePath = path.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+                            } else if (path.includes('deposit-proofs/')) {
+                              const parts = path.split('deposit-proofs/');
+                              filePath = parts[parts.length - 1];
+                            } else if (!path.includes('/')) {
+                              filePath = path;
+                            } else {
+                              filePath = path.split('/').pop() || path;
+                            }
+                            
+                            // Delete from storage
+                            const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+                            
+                            if (delErr) {
+                              console.error('Storage delete error:', delErr);
+                              toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
+                            } else {
+                              // Update database
+                              const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                              
+                              if (dbErr) {
+                                console.error('Database update error:', dbErr);
+                                toast({ title: 'خطأ في تحديث قاعدة البيانات', description: dbErr.message, variant: 'destructive' });
+                              } else {
+                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                loadData();
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Delete error:', error);
+                            toast({ title: 'خطأ', description: 'حدث خطأ أثناء حذف الصورة', variant: 'destructive' });
+                          }
+                        }
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      حذف صورة إثبات الدفع
+                    </Button>
+                  )}
+
                   {req.status === 'pending' && (
                     <>
                       <Textarea
