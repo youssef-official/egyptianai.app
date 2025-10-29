@@ -180,7 +180,27 @@ const Profile = () => {
             <ArrowLeft className="w-4 h-4" />
             العودة
           </Button>
-              {/* Profile Header Card */}\n        <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">    <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
+        </div>
+
+        {/* Wallet Info - Moved to Top */}
+        {profile?.user_type !== 'doctor' && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary">
+                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        )}
+
+        {/* Profile Header Card */}
+        <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
           <CardContent className="relative pt-0 pb-6">
             <div className="flex flex-col items-center -mt-16">
               <div className="relative">
@@ -246,7 +266,9 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
-        {/* Wallet Info - Moved under Profile Card */}\n        {profile?.user_type !== 'doctor' && (\n          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">\n          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">\n            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>\n          </CardHeader>\n          <CardContent className="pt-6">\n            <div className="text-center">\n              <div className="text-4xl font-bold text-primary">\n                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>\n              </div>\n            </div>\n          </CardContent>\n        </Card>\n        )}\n\n        {/* Verification Card for Doctors */}\n        {profile?.user_type === 'doctor' && !doctor?.is_verified && (
+
+        {/* Verification Card for Doctors */}
+        {profile?.user_type === 'doctor' && !doctor?.is_verified && (
           <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0 border-primary/20">
             <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
               <CardTitle className="text-lg flex items-center gap-2">
