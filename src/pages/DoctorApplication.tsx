@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, Upload, FileText, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { uploadToR2 } from "@/lib/r2-storage";
 
 const DoctorApplication = () => {
   const [fullName, setFullName] = useState("");
@@ -48,14 +49,11 @@ const DoctorApplication = () => {
     const { data: { user } } = await supabase.auth.getUser();
     const fileExt = file.name.split('.').pop();
     const fileName = `${user!.id}/${folder}/${Date.now()}.${fileExt}`;
+    const path = `doctor-documents/${fileName}`;
     
-    const { error: uploadError } = await supabase.storage
-      .from('doctor-documents')
-      .upload(fileName, file);
+    await uploadToR2(file, path);
 
-    if (uploadError) throw uploadError;
-
-    return fileName;
+    return path;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

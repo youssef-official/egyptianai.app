@@ -69,9 +69,8 @@ const Deposit = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const fileExt = proofImage.name.split(".").pop();
       const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
-      const path = `${user!.id}/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from("deposit-proofs").upload(path, proofImage);
-      if (uploadError) throw uploadError;
+      const path = `deposit-proofs/${user!.id}/${fileName}`;
+      await uploadToR2(proofImage, path);
       await supabase.from("deposit_requests").insert({
         user_id: user!.id,
         amount: parseFloat(amount),

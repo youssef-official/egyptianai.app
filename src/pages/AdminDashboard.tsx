@@ -14,6 +14,7 @@ import verifiedBadge from "@/assets/verified-badge.png";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { deleteFromR2, getR2SignedUrl } from "@/lib/r2-storage";
 
 const AdminDashboard = () => {
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
@@ -147,9 +148,10 @@ const AdminDashboard = () => {
         }
         
         // Delete the image from storage
-        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
-        if (storageError) {
-          console.error('Storage delete error:', storageError);
+        try {
+          await deleteFromR2(filePath);
+        } catch (error) {
+          console.error('Storage delete error:', error);
         }
       } catch (error) {
         console.error('Error deleting image:', error);
@@ -203,9 +205,10 @@ const AdminDashboard = () => {
         }
         
         // Delete the image from storage
-        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
-        if (storageError) {
-          console.error('Storage delete error:', storageError);
+        try {
+          await deleteFromR2(filePath);
+        } catch (error) {
+          console.error('Storage delete error:', error);
         }
       } catch (error) {
         console.error('Error deleting image:', error);
@@ -728,11 +731,11 @@ const AdminDashboard = () => {
                         className="rounded-xl"
                         size="sm"
                         onClick={async () => {
-                          const { data, error } = await supabase.storage
-                            .from('doctor-documents')
-                            .createSignedUrl(path, 60 * 60);
-                          if (!error && data?.signedUrl) {
-                            window.open(data.signedUrl, '_blank');
+                          try {
+                            const signedUrl = await getR2SignedUrl(path, 60 * 60);
+                            window.open(signedUrl, '_blank');
+                          } catch (error) {
+                            toast({ title: 'خطأ', description: 'فشل في عرض المستند', variant: 'destructive' });
                           }
                         }}
                       >
@@ -751,8 +754,12 @@ const AdminDashboard = () => {
                           size="sm"
                           onClick={async () => {
                             // Delete the file to save storage space
-                            await supabase.storage.from('doctor-documents').remove([path]);
-                            toast({ title: 'تم الحذف', description: `تم حذف المستند ${idx + 1}` });
+                            try {
+                              await deleteFromR2(path);
+                              toast({ title: 'تم الحذف', description: `تم حذف المستند ${idx + 1}` });
+                            } catch (error) {
+                              toast({ title: 'خطأ', description: 'فشل في حذف المستند', variant: 'destructive' });
+                            }
                           }}
                         >
                           حذف المستند {idx + 1}
@@ -833,11 +840,11 @@ const AdminDashboard = () => {
                             setSelectedImage(path);
                             return;
                           }
-                          const { data, error } = await supabase.storage
-                            .from('deposit-proofs')
-                            .createSignedUrl(path, 60 * 60);
-                          if (!error && data?.signedUrl) {
-                            setSelectedImage(data.signedUrl);
+                          try {
+                            const signedUrl = await getR2SignedUrl(path, 60 * 60);
+                            setSelectedImage(signedUrl);
+                          } catch (error) {
+                            toast({ title: 'خطأ', description: 'فشل في عرض الصورة', variant: 'destructive' });
                           }
                         }}
                       >
@@ -870,12 +877,9 @@ const AdminDashboard = () => {
                                   }
                                   
                                   // Delete from storage
-                                  const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
-                                  
-                                  if (delErr) {
-                                    console.error('Storage delete error:', delErr);
-                                    toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
-                                  } else {
+                                  try {
+                                    await deleteFromR2(filePath);
+                                    
                                     // Update database
                                     const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
                                     
@@ -887,6 +891,9 @@ const AdminDashboard = () => {
                                       setSelectedImage('');
                                       loadData();
                                     }
+                                  } catch (delErr: any) {
+                                    console.error('Storage delete error:', delErr);
+                                    toast({ title: 'خطأ في حذف الملف', description: delErr?.message || 'حدث خطأ', variant: 'destructive' });
                                   }
                                 } catch (error) {
                                   console.error('Delete error:', error);
@@ -927,12 +934,9 @@ const AdminDashboard = () => {
                             }
                             
                             // Delete from storage
-                            const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
-                            
-                            if (delErr) {
-                              console.error('Storage delete error:', delErr);
-                              toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
-                            } else {
+                            try {
+                              await deleteFromR2(filePath);
+                              
                               // Update database
                               const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
                               
@@ -943,6 +947,9 @@ const AdminDashboard = () => {
                                 toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
                                 loadData();
                               }
+                            } catch (delErr: any) {
+                              console.error('Storage delete error:', delErr);
+                              toast({ title: 'خطأ في حذف الملف', description: delErr?.message || 'حدث خطأ', variant: 'destructive' });
                             }
                           } catch (error) {
                             console.error('Delete error:', error);
