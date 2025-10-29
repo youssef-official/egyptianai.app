@@ -620,71 +620,134 @@ const DoctorDashboard = () => {
         </Card>
 
             {/* Recent Transactions */}
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle>آخر الاستشارات</CardTitle>
-                <CardDescription>المستخدمين الذين تواصلوا معك</CardDescription>
+            <Card className="shadow-medium rounded-3xl border-0 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 pb-4">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+                    <span className="text-white text-lg">💬</span>
+                  </div>
+                  آخر الاستشارات
+                </CardTitle>
+                <CardDescription className="text-sm mt-2">
+                  المستخدمين الذين تواصلوا معك للاستشارة
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
                   {transactions.map((transaction) => {
                     const sender = transaction.sender;
                     const displayName = sender?.full_name || 'مستخدم';
                     const displayAvatar = sender?.avatar_url;
                     const displayPhone = sender?.phone;
+                    const transactionDate = new Date(transaction.created_at);
                     
                     return (
-                      <div key={transaction.id} className="flex items-center gap-4 p-4 bg-secondary rounded-xl border border-primary/10 hover:border-primary/30 transition-all">
-                        {/* Profile Image */}
-                        <Avatar className="w-16 h-16 border-2 border-primary/30 flex-shrink-0">
-                          <AvatarImage src={displayAvatar || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-lg">
-                            {displayName.charAt(0).toUpperCase() || 'م'}
-                          </AvatarFallback>
-                        </Avatar>
+                      <div key={transaction.id} className="group relative bg-gradient-to-br from-background via-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                        {/* Decorative corner */}
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-2xl" />
                         
-                        {/* User Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="mb-1">
-                            <p className="font-bold text-base text-foreground">
-                              {displayName}
-                            </p>
+                        <div className="relative flex items-start gap-4">
+                          {/* Profile Image with Badge */}
+                          <div className="relative flex-shrink-0">
+                            <Avatar className="w-20 h-20 border-4 border-primary/30 shadow-lg ring-2 ring-primary/20">
+                              <AvatarImage src={displayAvatar || undefined} className="object-cover" />
+                              <AvatarFallback className="bg-gradient-to-br from-primary via-primary-light to-primary/80 text-white text-2xl font-bold">
+                                {displayName.charAt(0).toUpperCase() || 'م'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">
-                              📅 {new Date(transaction.created_at).toLocaleString('ar-EG', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              رقم العملية: {transaction.id}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              ID المستخدم: {transaction.user_id}
-                            </p>
-                            {displayPhone && (
-                              <p className="text-xs text-muted-foreground">
-                                📱 {displayPhone}
-                              </p>
-                            )}
+                          
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            {/* Name and Amount Row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-lg text-foreground truncate">
+                                  {displayName}
+                                </h3>
+                                {displayPhone && (
+                                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                                    <span>📱</span>
+                                    <span>{displayPhone}</span>
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0 text-left">
+                                <div className="inline-flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full">
+                                  <span className="text-2xl font-bold text-primary">
+                                    {transaction.amount}
+                                  </span>
+                                  <span className="text-xs font-medium text-primary/80">نقطة</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Transaction Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-primary/10">
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary text-sm">📅</span>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground text-[10px]">التاريخ</p>
+                                  <p className="font-medium text-foreground">
+                                    {transactionDate.toLocaleDateString('ar-EG', { 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                  <p className="text-muted-foreground text-[10px]">
+                                    {transactionDate.toLocaleTimeString('ar-EG', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary text-sm">🆔</span>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground text-[10px]">رقم العملية</p>
+                                  <p className="font-mono font-medium text-foreground text-[10px] break-all">
+                                    {transaction.id}
+                                  </p>
+                                  <p className="text-muted-foreground text-[10px] mt-0.5">
+                                    ID: {transaction.user_id.slice(0, 8)}...
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-2 pt-1">
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-full">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                                  استشارة مكتملة
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Amount */}
-                        <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-lg text-primary">
-                            {transaction.amount} نقطة
-                          </p>
                         </div>
                       </div>
                     );
                   })}
+                  
                   {transactions.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">لا توجد استشارات بعد</p>
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/10 to-primary-light/10 flex items-center justify-center">
+                        <span className="text-4xl">📋</span>
+                      </div>
+                      <p className="text-muted-foreground text-lg font-medium">لا توجد استشارات بعد</p>
+                      <p className="text-muted-foreground text-sm mt-1">ستظهر الاستشارات هنا عند تواصل المستخدمين معك</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
