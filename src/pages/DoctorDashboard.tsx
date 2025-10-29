@@ -600,26 +600,48 @@ const DoctorDashboard = () => {
               <CardContent>
                 <div className="space-y-3">
                   {transactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
-                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                    <div key={transaction.id} className="flex items-center gap-4 p-4 bg-secondary rounded-xl border border-primary/10 hover:border-primary/30 transition-all">
+                      {/* Profile Image */}
+                      <Avatar className="w-16 h-16 border-2 border-primary/30 flex-shrink-0">
                         <AvatarImage src={transaction.sender?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-lg">
                           {transaction.sender?.full_name?.charAt(0) || 'م'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <p className="font-semibold">{transaction.sender?.full_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {transaction.sender?.phone && `📱 ${transaction.sender?.phone}`}
-                          {transaction.sender?.email && <span className="block">{transaction.sender?.email}</span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.created_at).toLocaleString('ar-EG')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">رقم العملية: {transaction.id}</p>
+                      
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-1">
+                          <p className="font-bold text-base text-foreground">
+                            {transaction.sender?.full_name || 'مستخدم'}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            📅 {new Date(transaction.created_at).toLocaleString('ar-EG', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            رقم العملية: {transaction.id}
+                          </p>
+                          {transaction.sender?.phone && (
+                            <p className="text-xs text-muted-foreground">
+                              📱 {transaction.sender.phone}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-primary">{transaction.amount} نقطة</p>
+                      
+                      {/* Amount */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-lg text-primary">
+                          {transaction.amount} نقطة
+                        </p>
                       </div>
                     </div>
                   ))}

@@ -125,19 +125,32 @@ const AdminDashboard = () => {
         .eq("user_id", userId);
     }
 
+    // Delete proof image if exists
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
       try {
-        // Extract the file path from URL if it's a full URL
         let filePath = depositRequest.proof_image_url;
+        // Extract the file path from URL - handle different URL formats
         if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
           filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
         } else if (filePath.includes('deposit-proofs/')) {
-          filePath = filePath.split('deposit-proofs/')[1];
+          const parts = filePath.split('deposit-proofs/');
+          filePath = parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Already a simple path
+          filePath = filePath;
+        } else {
+          // Try to extract UUID or filename from path
+          filePath = filePath.split('/').pop() || filePath;
         }
         
         // Delete the image from storage
-        await supabase.storage.from('deposit-proofs').remove([filePath]);
+        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
       } catch (error) {
         console.error('Error deleting image:', error);
       }
@@ -168,19 +181,32 @@ const AdminDashboard = () => {
   };
 
   const handleDepositReject = async (requestId: string) => {
+    // Delete proof image if exists
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
       try {
-        // Extract the file path from URL if it's a full URL
         let filePath = depositRequest.proof_image_url;
+        // Extract the file path from URL - handle different URL formats
         if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
           filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
         } else if (filePath.includes('deposit-proofs/')) {
-          filePath = filePath.split('deposit-proofs/')[1];
+          const parts = filePath.split('deposit-proofs/');
+          filePath = parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Already a simple path
+          filePath = filePath;
+        } else {
+          // Try to extract UUID or filename from path
+          filePath = filePath.split('/').pop() || filePath;
         }
         
         // Delete the image from storage
-        await supabase.storage.from('deposit-proofs').remove([filePath]);
+        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
       } catch (error) {
         console.error('Error deleting image:', error);
       }
