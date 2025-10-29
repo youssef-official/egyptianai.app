@@ -118,29 +118,49 @@ const DoctorDashboard = () => {
 
     // Get transactions
     if (doctorData) {
-      const { data: transactionsData } = await supabase
+      const { data: transactionsData, error: txError } = await supabase
         .from("transactions")
         .select("*")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      // Fetch user profiles separately for each transaction
-      if (transactionsData) {
-        const transactionsWithProfiles = await Promise.all(
-          transactionsData.map(async (tx) => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url, phone, email, id")
-              .eq("id", tx.user_id)
-              .single();
-            
-            return {
-              ...tx,
-              sender: profile || null
-            };
-          })
-        );
+      if (txError) {
+        console.error("Error fetching transactions:", txError);
+        setTransactions([]);
+      } else if (transactionsData && transactionsData.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(transactionsData.map(tx => tx.user_id))];
+        
+        // Fetch all user profiles at once
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone, email")
+          .in("id", userIds);
+        
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+          // Set transactions without profiles if there's an error
+          setTransactions(transactionsData.map(tx => ({ ...tx, sender: null })));
+          return;
+        }
+        
+        // Create a map of user_id to profile for quick lookup
+        const profilesMap = new Map();
+        if (profilesData && profilesData.length > 0) {
+          profilesData.forEach(profile => {
+            profilesMap.set(profile.id, profile);
+          });
+        }
+        
+        // Map transactions with their profiles
+        const transactionsWithProfiles = transactionsData.map(tx => {
+          const profile = profilesMap.get(tx.user_id);
+          return {
+            ...tx,
+            sender: profile || null
+          };
+        });
         
         setTransactions(transactionsWithProfiles);
       } else {
@@ -607,55 +627,62 @@ const DoctorDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {transactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center gap-4 p-4 bg-secondary rounded-xl border border-primary/10 hover:border-primary/30 transition-all">
-                      {/* Profile Image */}
-                      <Avatar className="w-16 h-16 border-2 border-primary/30 flex-shrink-0">
-                        <AvatarImage src={transaction.sender?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-lg">
-                          {transaction.sender?.full_name?.charAt(0) || 'م'}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      {/* User Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="mb-1">
-                          <p className="font-bold text-base text-foreground">
-                            {transaction.sender?.full_name || 'مستخدم'}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">
-                            📅 {new Date(transaction.created_at).toLocaleString('ar-EG', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric', 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            رقم العملية: {transaction.id}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            ID المستخدم: {transaction.user_id}
-                          </p>
-                          {transaction.sender?.phone && (
-                            <p className="text-xs text-muted-foreground">
-                              📱 {transaction.sender.phone}
+                  {transactions.map((transaction) => {
+                    const sender = transaction.sender;
+                    const displayName = sender?.full_name || 'مستخدم';
+                    const displayAvatar = sender?.avatar_url;
+                    const displayPhone = sender?.phone;
+                    
+                    return (
+                      <div key={transaction.id} className="flex items-center gap-4 p-4 bg-secondary rounded-xl border border-primary/10 hover:border-primary/30 transition-all">
+                        {/* Profile Image */}
+                        <Avatar className="w-16 h-16 border-2 border-primary/30 flex-shrink-0">
+                          <AvatarImage src={displayAvatar || undefined} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white text-lg">
+                            {displayName.charAt(0).toUpperCase() || 'م'}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1">
+                            <p className="font-bold text-base text-foreground">
+                              {displayName}
                             </p>
-                          )}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                              📅 {new Date(transaction.created_at).toLocaleString('ar-EG', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              رقم العملية: {transaction.id}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              ID المستخدم: {transaction.user_id}
+                            </p>
+                            {displayPhone && (
+                              <p className="text-xs text-muted-foreground">
+                                📱 {displayPhone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Amount */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-lg text-primary">
+                            {transaction.amount} نقطة
+                          </p>
                         </div>
                       </div>
-                      
-                      {/* Amount */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-lg text-primary">
-                          {transaction.amount} نقطة
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {transactions.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">لا توجد استشارات بعد</p>
                   )}

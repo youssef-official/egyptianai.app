@@ -231,6 +231,18 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "Admins can manage profiles" ON profiles FOR ALL USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
   END IF;
+  -- Allow doctors to view profiles of users who have consultations with them
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='profiles' AND policyname='Doctors can view profiles of their consultation users'
+  ) THEN
+    CREATE POLICY "Doctors can view profiles of their consultation users" ON profiles FOR SELECT USING (
+      EXISTS (
+        SELECT 1 FROM public.transactions t
+        INNER JOIN public.doctors d ON t.doctor_id = d.id
+        WHERE t.user_id = profiles.id AND d.user_id = auth.uid()
+      )
+    );
+  END IF;
 END $$;
 
 -- wallets
