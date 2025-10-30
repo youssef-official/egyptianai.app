@@ -353,7 +353,7 @@ const Profile = () => {
               استخدم الذكاء الاصطناعي لتحليل التحاليل الطبية الخاصة بك بدقة عالية.
             </p>
             <Button 
-              onClick={() => navigate("/anlize")}
+              onClick={() => navigate("/analize")}
               className="w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full h-11"
             >
               فتح المحلل الذكي
