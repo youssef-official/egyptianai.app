@@ -19,8 +19,8 @@ const Consultation = lazy(() => import("./pages/Consultation"));
 const AIChat = lazy(() => import("./pages/AIChat"));
 const DoctorApplication = lazy(() => import("./pages/DoctorApplication"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Anlize = lazy(() => import("./pages/anlize"));
-const Volunteer = lazy(() => import("./pages/volunteer")); // ✅ هنا التعديل الصغير
+const Analyze = lazy(() => import("./pages/analyze"));
+const Volunteer = lazy(() => import("./pages/volunteer")); // ✅ الرابط الجديد
 
 const queryClient = new QueryClient();
 
@@ -44,7 +44,7 @@ const App = () => (
             <Route path="/consultation" element={<Consultation />} />
             <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/doctor-application" element={<DoctorApplication />} />
-            <Route path="/anlize" element={<Anlize />} />
+            <Route path="/analyze" element={<Analyze />} />
             <Route path="/volunteer" element={<Volunteer />} /> {/* ✅ الرابط الجديد */}
             <Route path="*" element={<NotFound />} />
           </Routes>
