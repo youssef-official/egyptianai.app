@@ -17,14 +17,16 @@ const NavItem = ({ icon: Icon, label, to, isActive }: NavItemProps) => {
   return (
     <button
       onClick={() => navigate(to)}
-      className={`flex flex-col items-center justify-center gap-1 py-3 px-4 rounded-2xl transition-all min-w-[70px] hover-lift ${
+      className={`flex flex-col items-center justify-center gap-1.5 py-2 px-3 rounded-xl transition-all ${
         isActive
-          ? "text-primary scale-105 bg-primary/10"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          ? "text-primary"
+          : "text-gray-400 hover:text-gray-600"
       }`}
     >
-      <Icon className={`w-6 h-6 ${isActive ? "animate-bounce-subtle" : ""}`} />
-      <span className="text-[11px] font-semibold">{label}</span>
+      <div className={`transition-all ${isActive ? "scale-110" : ""}`}>
+        <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
+      </div>
+      <span className={`text-[10px] font-medium ${isActive ? "font-semibold" : ""}`}>{label}</span>
     </button>
   );
 };
@@ -63,8 +65,8 @@ const BottomNav = () => {
   const isAdmin = userRoles?.some(role => role.role === 'admin');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t shadow-strong z-50 safe-area-bottom">
-      <div className="flex justify-around items-center h-20 max-w-md mx-auto px-6">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/50 z-50 safe-area-bottom">
+      <div className="flex justify-around items-center h-20 max-w-md mx-auto px-4">
         <NavItem
           icon={Home}
           label={t('common.home')}

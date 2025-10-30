@@ -18,11 +18,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
 
-    /* Modern Blue Primary - iOS inspired */
-    --primary: 214 100% 50%;
+    /* Modern Purple-Blue Primary - iOS Medical App */
+    --primary: 250 70% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 214 100% 65%;
-    --primary-glow: 214 100% 80%;
+    --primary-light: 250 70% 70%;
+    --primary-glow: 250 70% 85%;
 
     /* Clean Gray Secondary */
     --secondary: 0 0% 96.1%;
@@ -31,7 +31,7 @@ All colors MUST be HSL.
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
 
-    --accent: 214 100% 50%;
+    --accent: 250 70% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -45,14 +45,14 @@ All colors MUST be HSL.
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 214 100% 50%;
+    --ring: 250 70% 60%;
 
     --radius: 0.75rem;
 
     /* Modern Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 50%), hsl(214 100% 65%));
+    --gradient-primary: linear-gradient(135deg, hsl(250 70% 60%), hsl(250 70% 70%));
     --gradient-soft: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(214 100% 98%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(250 70% 98%));
 
     /* iOS-style Shadows */
     --shadow-soft: 0 1px 3px hsl(0 0% 0% / 0.1);

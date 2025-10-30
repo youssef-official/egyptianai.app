@@ -77,92 +77,142 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-28">
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-fade-in">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-strong hover-scale">
-              <Stethoscope className="w-8 h-8 text-white" />
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-28">
+      <div className="container mx-auto px-6 py-8 max-w-md">
+        {/* Header with greeting - iOS style */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">مرحباً، {profile?.full_name}</h1>
-              <p className="text-sm text-muted-foreground">Cura Verse - منصة الرعاية الصحية</p>
+              <p className="text-gray-500 text-sm mb-1">Hello,</p>
+              <h1 className="text-3xl font-bold text-gray-900">{profile?.full_name?.split(' ')[0] || 'مستخدم'}! 👋</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate("/profile")}
+                className="rounded-full h-12 w-12 p-0"
+              >
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {profile?.full_name?.charAt(0) || 'M'}
+                </div>
+              </Button>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            onClick={handleLogout} 
-            className="gap-2 rounded-2xl h-12 w-12 p-0 hover-lift"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
+
+          {/* Search bar - iOS style */}
+          <div className="relative">
+            <input 
+              type="text"
+              placeholder="Search Doctor"
+              onClick={() => navigate("/doctors")}
+              className="w-full bg-white rounded-2xl px-12 py-4 text-sm shadow-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              readOnly
+            />
+            <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
 
-        {/* Wallet Summary */}
-        <Card className="mb-8 shadow-strong animate-slide-in-right rounded-3xl overflow-hidden border-0 hover-lift">
-          <CardHeader className="bg-gradient-to-r from-primary to-primary-light text-white pb-6">
-            <div className="flex items-center gap-3 text-lg font-semibold">
-              <WalletIcon className="w-6 h-6" />
-              {t('index.myWallet')}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-8 pb-8">
-            <div className="text-center space-y-6">
-              <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl text-muted-foreground">{t('common.points')}</span>
+        {/* Specialty Categories - iOS style */}
+        <div className="mb-8">
+          <div className="grid grid-cols-4 gap-4">
+            <div onClick={() => navigate("/doctors")} className="flex flex-col items-center gap-2 cursor-pointer animate-fade-in hover-scale">
+              <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center shadow-sm">
+                <span className="text-3xl">🧠</span>
               </div>
-              <div className="flex gap-4 justify-center">
-                <Button 
-                  className="bg-gradient-to-r from-primary to-primary-light hover:shadow-glow rounded-2xl h-12 px-8 font-semibold"
-                  onClick={() => navigate("/transfer")}
-                >
-                  {t('common.transfer')}
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="rounded-2xl h-12 px-8 font-semibold border-2"
-                  onClick={() => navigate("/wallet")}
-                >
-                  {t('index.openWallet')}
-                </Button>
-              </div>
+              <span className="text-xs text-gray-600 text-center">Neurologist</span>
             </div>
-          </CardContent>
-        </Card>
+            
+            <div onClick={() => navigate("/doctors")} className="flex flex-col items-center gap-2 cursor-pointer animate-fade-in hover-scale" style={{animationDelay: '0.1s'}}>
+              <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center shadow-sm">
+                <span className="text-3xl">❤️</span>
+              </div>
+              <span className="text-xs text-gray-600 text-center">Cardiologist</span>
+            </div>
+            
+            <div onClick={() => navigate("/doctors")} className="flex flex-col items-center gap-2 cursor-pointer animate-fade-in hover-scale" style={{animationDelay: '0.2s'}}>
+              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center shadow-sm">
+                <span className="text-3xl">🦴</span>
+              </div>
+              <span className="text-xs text-gray-600 text-center">Orthopedist</span>
+            </div>
+            
+            <div onClick={() => navigate("/doctors")} className="flex flex-col items-center gap-2 cursor-pointer animate-fade-in hover-scale" style={{animationDelay: '0.3s'}}>
+              <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center shadow-sm">
+                <span className="text-3xl">🫁</span>
+              </div>
+              <span className="text-xs text-gray-600 text-center">Pulmonologist</span>
+            </div>
+          </div>
+        </div>
 
-        {/* Main Actions */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          {/* تحدث مع دكتور حقيقي */}
-          <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover-scale animate-fade-in rounded-3xl border-0 shadow-medium hover-lift"
-            onClick={() => navigate("/doctors")}
-          >
-            <CardHeader className="p-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center hover-scale">
-                  <Stethoscope className="w-8 h-8 text-primary" />
+        {/* Upcoming Appointment Card - iOS style */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Appointment</h2>
+          <Card className="rounded-3xl border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary to-primary-light animate-slide-in-up hover-lift">
+            <CardContent className="p-6 text-white">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Stethoscope className="w-7 h-7" />
                 </div>
-                <div className="text-base font-bold text-foreground">تحدث مع دكتور حقيقي</div>
-                <div className="text-xs text-muted-foreground">استشارة طبية مباشرة</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">استشارة طبية</p>
+                  <p className="text-white/80 text-sm">احجز موعدك الآن</p>
+                </div>
               </div>
-            </CardHeader>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  <span>اليوم</span>
+                </div>
+                <Button 
+                  onClick={() => navigate("/doctors")}
+                  className="mr-auto bg-white text-primary hover:bg-white/90 rounded-full px-6 h-9 font-semibold shadow-md"
+                >
+                  احجز الآن
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card 
+            onClick={() => navigate("/ai-chat")}
+            className="rounded-2xl border-0 shadow-md cursor-pointer hover-lift animate-fade-in bg-white"
+          >
+            <CardContent className="p-5">
+              <div className="flex flex-col gap-3">
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1">AI Chat</p>
+                  <p className="text-xs text-gray-500">استشارة فورية</p>
+                </div>
+              </div>
+            </CardContent>
           </Card>
 
-          {/* تحدث مع الذكاء الاصطناعي */}
           <Card 
-            className="cursor-pointer hover:shadow-strong transition-all hover-scale animate-fade-in rounded-3xl border-0 shadow-medium hover-lift"
-            onClick={() => navigate("/ai-chat")}
+            onClick={() => navigate("/wallet")}
+            className="rounded-2xl border-0 shadow-md cursor-pointer hover-lift animate-fade-in bg-white"
           >
-            <CardHeader className="p-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center hover-scale">
-                  <Bot className="w-8 h-8 text-primary" />
+            <CardContent className="p-5">
+              <div className="flex flex-col gap-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <WalletIcon className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="text-base font-bold text-foreground">تحدث مع الذكاء الاصطناعي</div>
-                <div className="text-xs text-muted-foreground">استشارة فورية 24/7</div>
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1">My Wallet</p>
+                  <p className="text-xs text-gray-500">{wallet?.balance?.toFixed(0) || "0"} نقطة</p>
+                </div>
               </div>
-            </CardHeader>
+            </CardContent>
           </Card>
         </div>
 

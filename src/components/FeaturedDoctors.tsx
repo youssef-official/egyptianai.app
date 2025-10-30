@@ -37,43 +37,47 @@ const FeaturedDoctors = () => {
 
   return (
     <div className="mb-8 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-6 text-foreground">⭐ أبرز الأطباء الموثقين</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {doctors.map((doctor) => (
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900">Recommend Doctor</h2>
+        <button className="text-sm text-primary font-medium">See All</button>
+      </div>
+      <div className="space-y-4">
+        {doctors.slice(0, 3).map((doctor, idx) => (
           <Card 
             key={doctor.id} 
-            className="rounded-3xl border-0 shadow-medium overflow-hidden hover:shadow-strong transition-all cursor-pointer bg-gradient-to-b from-background to-primary/5 hover-lift"
+            className="rounded-2xl border-0 shadow-md overflow-hidden hover:shadow-lg transition-all cursor-pointer bg-white hover-lift animate-fade-in"
+            style={{animationDelay: `${idx * 0.1}s`}}
             onClick={() => window.location.assign(`/consultation?doctorId=${doctor.id}`)}
           >
             <CardContent className="p-4">
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="relative">
-                  <Avatar className="w-18 h-18 sm:w-20 sm:h-20 border-2 border-primary/30 shadow-inner">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-shrink-0">
+                  <Avatar className="w-16 h-16 border-2 border-gray-100">
                     <AvatarImage src={doctor.image_url || (doctor as any).profiles?.avatar_url || '/placeholder.svg'} alt={doctor.doctor_name} loading="lazy" className="object-cover" />
-                    <AvatarFallback className="text-lg sm:text-xl bg-gradient-to-br from-primary to-primary-light text-white">
+                    <AvatarFallback className="text-lg bg-gradient-to-br from-primary to-primary-light text-white">
                       {doctor.doctor_name?.charAt(0) || "د"}
                     </AvatarFallback>
                   </Avatar>
                   {doctor.is_verified && (
-                    <img 
-                      src={verifiedBadge} 
-                      alt="موثق" 
-                      className="w-6 h-6 sm:w-7 sm:h-7 absolute -top-1 -right-1 drop-shadow-md"
-                    />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                   )}
                 </div>
-                <div className="w-full">
-                  <h3 className="font-bold text-sm sm:text-base line-clamp-1">{doctor.doctor_name}</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{doctor.specialization_ar}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">{doctor.doctor_name}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">{doctor.specialization_ar}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">⭐ 5.0</span>
+                    <span className="text-sm text-gray-400">•</span>
+                    <span className="text-sm text-gray-500">5 years experience</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full">
-                    {doctor.consultation_fee} نقطة
-                  </Badge>
-                  <Badge variant="default" className="text-xs px-3 py-1 rounded-full">
-                    موثق
-                  </Badge>
-                </div>
+                <button className="flex-shrink-0 bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-md">
+                  Visit Now
+                </button>
               </div>
             </CardContent>
           </Card>
