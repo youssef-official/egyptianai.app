@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Copy, Check } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Check, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
@@ -288,6 +288,25 @@ const Profile = () => {
           </CardContent>
         </Card>
 
+        {/* دعم فني */}
+        <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
+          <CardHeader className="bg-gradient-to-r from-rose-500/10 to-rose-600/10 rounded-t-3xl text-center">
+            <CardTitle className="text-lg flex justify-center items-center gap-2">
+              💬 الدعم الفني
+            </CardTitle>
+            <CardDescription>تواصل معنا لأي استفسار أو مساعدة</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 text-center">
+            <Button
+              onClick={() => window.open("mailto:admin@egyptianai.app")}
+              className="w-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full h-11 text-white flex items-center justify-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              تواصل عبر البريد الإلكتروني
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* تعديل البيانات */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0 mb-10">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
@@ -316,16 +335,6 @@ const Profile = () => {
             </Button>
           </CardContent>
         </Card>
-
-        {/* زر الدعم */}
-        <div className="text-center mb-6">
-          <Button
-            onClick={() => window.open("mailto:admin@egyptianai.app")}
-            className="bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-full h-11 px-8"
-          >
-            💬 دعم فني عبر البريد الإلكتروني
-          </Button>
-        </div>
       </div>
       <BottomNav />
     </div>
