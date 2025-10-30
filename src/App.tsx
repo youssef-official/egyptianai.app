@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import LoadingScreen from "./components/LoadingScreen";
-import './i18n/config';
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -20,6 +19,8 @@ const Consultation = lazy(() => import("./pages/Consultation"));
 const AIChat = lazy(() => import("./pages/AIChat"));
 const DoctorApplication = lazy(() => import("./pages/DoctorApplication"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Anlize = lazy(() => import("./pages/anlize"));
+const Volunteer = lazy(() => import("./pages/Volunteer")); // 👈 تمت الإضافة
 
 const queryClient = new QueryClient();
 
@@ -41,11 +42,13 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/consultation" element={<Consultation />} />
-          <Route path="/ai-chat" element={<AIChat />} />
-          <Route path="/doctor-application" element={<DoctorApplication />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+            <Route path="/ai-chat" element={<AIChat />} />
+            <Route path="/doctor-application" element={<DoctorApplication />} />
+            <Route path="/anlize" element={<Anlize />} />
+            <Route path="/volunteer" element={<Volunteer />} /> {/* 👈 هنا الرابط الجديد */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
