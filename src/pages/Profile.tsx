@@ -11,7 +11,6 @@ import { ArrowLeft, Upload, Copy, Check, MessageCircle, Stethoscope, HeadphonesI
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import verifiedBadge from "@/assets/verified-badge.png";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -29,17 +28,6 @@ const Profile = () => {
   useEffect(() => {
     loadProfile();
   }, []);
-
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    
-    return !!data;
-  };
 
   const loadProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -182,7 +170,7 @@ const Profile = () => {
           </Button>
         </div>
 
-        {/* Profile Header Card */}
+        {/* Profile Header */}
         <Card className="mb-6 shadow-strong animate-fade-in rounded-3xl border-0 overflow-hidden">
           <div className="h-32 bg-gradient-to-r from-primary to-primary-light" />
           <CardContent className="relative pt-0 pb-6">
@@ -209,7 +197,7 @@ const Profile = () => {
                   />
                 </label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold mt-4">{profile?.full_name}</h2>
                 {doctor?.is_verified && (
@@ -219,22 +207,7 @@ const Profile = () => {
               <Badge className="mt-2" variant={profile?.user_type === 'doctor' ? 'default' : 'secondary'}>
                 {profile?.user_type === 'doctor' ? '👨‍⚕️ دكتور' : '👤 مستخدم'}
               </Badge>
-              
-              {/* Quick Actions */}
-              <div className="flex gap-2 mt-4">
-                {profile?.user_type === 'doctor' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/doctor-dashboard")}
-                    className="gap-2"
-                  >
-                    <Stethoscope className="w-4 h-4" />
-                    لوحة الطبيب
-                  </Button>
-                )}
-              </div>
-              
+
               <div className="flex items-center gap-2 mt-4 bg-secondary px-4 py-2 rounded-full">
                 <span className="text-sm text-muted-foreground">معرف المستخدم:</span>
                 <code className="text-xs font-mono">{user?.id?.substring(0, 8)}...</code>
@@ -251,21 +224,30 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Volunteer Section */}
+        {/* Wallet Info (moved up) */}
+        {profile?.user_type !== 'doctor' && (
+          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
+              <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary">
+                  {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* باقي الأقسام زي ما هي */}
         <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 rounded-t-3xl">
-            <CardTitle className="text-lg flex items-center gap-2">
-              🤝 الدخول كمتطوع
-            </CardTitle>
-            <CardDescription>
-              ساعد المرضى أو الأطباء بدون مقابل، وساهم في خدمة الناس.
-            </CardDescription>
+            <CardTitle className="text-lg flex items-center gap-2">🤝 الدخول كمتطوع</CardTitle>
+            <CardDescription>ساعد المرضى أو الأطباء بدون مقابل.</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              انضم كمتطوع للمساعدة في الحالات أو التبرع بوقتك وخبرتك لخدمة المجتمع.
-            </p>
-            <Button 
+          <CardContent className="pt-6 text-center">
+            <Button
               onClick={() => navigate("/volunteer")}
               className="w-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full h-11 text-white"
             >
@@ -274,94 +256,23 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Verification Card for Doctors */}
-        {profile?.user_type === 'doctor' && !doctor?.is_verified && (
-          <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0 border-primary/20">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <img src={verifiedBadge} alt="توثيق" className="w-6 h-6" />
-                التوثيق والتطوير
-              </CardTitle>
-              <CardDescription>احصل على علامة التوثيق لتظهر في أول النتائج</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground mb-4">
-                لا يمكنك الدخول كطبيب قبل إرسال مستنداتك والموافقة عليها.
-              </p>
-              <Button 
-                onClick={() => navigate('/doctor-application')}
-                className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full"
-              >
-                إرسال المستندات للتوثيق
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Wallet Info */}
-        {profile?.user_type !== 'doctor' && (
-          <Card className="mb-6 shadow-medium animate-slide-in-right rounded-3xl border-0">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
-            <CardTitle className="text-lg">الرصيد الحالي</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary">
-                {wallet?.balance?.toFixed(0) || "0"} <span className="text-xl">نقطة</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
-
-        {/* Support Section */}
+        {/* زر التجربة الجديد */}
         <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
-          <CardHeader className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-t-3xl">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <HeadphonesIcon className="w-5 h-5 text-green-600" />
-              الدعم والمساعدة
-            </CardTitle>
-            <CardDescription>تواصل معنا للحصول على المساعدة</CardDescription>
+          <CardHeader>
+            <CardTitle className="text-lg text-center">جرّب برنامج التواصل الطبي</CardTitle>
+            <CardDescription className="text-center">اضغط لتجربة البرنامج مباشرة</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                هل تحتاج إلى مساعدة؟ فريق الدعم متاح لمساعدتك
-              </p>
-              <a
-                href="mailto:admin@egyptianai.app"
-                className="flex items-center justify-center gap-2 p-3 bg-secondary hover:bg-secondary/80 rounded-full transition-all"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">admin@egyptianai.app</span>
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Analyzer Section */}
-        <Card className="mb-6 shadow-medium animate-fade-in rounded-3xl border-0">
-          <CardHeader className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-t-3xl">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-blue-600" />
-              محلل التحاليل بالذكاء الاصطناعي
-            </CardTitle>
-            <CardDescription>اكتشف نتائج تحاليلك بشكل ذكي وسريع</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              استخدم الذكاء الاصطناعي لتحليل التحاليل الطبية الخاصة بك بدقة عالية.
-            </p>
-            <Button 
-              onClick={() => navigate("/analyze")}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full h-11"
+          <CardContent className="pt-4 text-center">
+            <Button
+              onClick={() => window.open("https://ymoo.site", "_blank")}
+              className="w-full bg-gradient-to-r from-teal-500 to-teal-600 rounded-full h-11 text-white"
             >
-              فتح المحلل الذكي
+              دخول البرنامج
             </Button>
           </CardContent>
         </Card>
 
-        {/* Edit Profile */}
+        {/* تعديل البيانات */}
         <Card className="shadow-medium animate-fade-in rounded-3xl border-0">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 rounded-t-3xl">
             <CardTitle className="text-lg">تعديل البيانات</CardTitle>
@@ -370,45 +281,26 @@ const Profile = () => {
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">الاسم الكامل</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="text-right rounded-2xl"
-              />
+              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="text-right rounded-2xl" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone">رقم الهاتف</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="text-right rounded-2xl"
-              />
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-right rounded-2xl" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input
-                id="email"
-                value={user?.email || ""}
-                disabled
-                className="text-right rounded-2xl bg-secondary"
-              />
+              <Input id="email" value={user?.email || ""} disabled className="text-right rounded-2xl bg-secondary" />
               <p className="text-xs text-muted-foreground">لا يمكن تعديل البريد الإلكتروني</p>
             </div>
 
-            <Button
-              onClick={handleUpdateProfile}
-              className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full h-11"
-            >
+            <Button onClick={handleUpdateProfile} className="w-full bg-gradient-to-r from-primary to-primary-light rounded-full h-11">
               حفظ التغييرات
             </Button>
           </CardContent>
         </Card>
       </div>
-      
       <BottomNav />
     </div>
   );
