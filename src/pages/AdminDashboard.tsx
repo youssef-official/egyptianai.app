@@ -125,10 +125,35 @@ const AdminDashboard = () => {
         .eq("user_id", userId);
     }
 
+    // Delete proof image if exists
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
-      // Delete the image from storage
-      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+      try {
+        let filePath = depositRequest.proof_image_url;
+        // Extract the file path from URL - handle different URL formats
+        if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+        } else if (filePath.includes('deposit-proofs/')) {
+          const parts = filePath.split('deposit-proofs/');
+          filePath = parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Already a simple path
+          filePath = filePath;
+        } else {
+          // Try to extract UUID or filename from path
+          filePath = filePath.split('/').pop() || filePath;
+        }
+        
+        // Delete the image from storage
+        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
     }
 
     await supabase
@@ -156,10 +181,35 @@ const AdminDashboard = () => {
   };
 
   const handleDepositReject = async (requestId: string) => {
+    // Delete proof image if exists
     const depositRequest = depositRequests.find(r => r.id === requestId);
     if (depositRequest?.proof_image_url) {
-      // Delete the image from storage
-      await supabase.storage.from('deposit-proofs').remove([depositRequest.proof_image_url]);
+      try {
+        let filePath = depositRequest.proof_image_url;
+        // Extract the file path from URL - handle different URL formats
+        if (filePath.includes('/storage/v1/object/public/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/public/deposit-proofs/')[1];
+        } else if (filePath.includes('/storage/v1/object/sign/deposit-proofs/')) {
+          filePath = filePath.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+        } else if (filePath.includes('deposit-proofs/')) {
+          const parts = filePath.split('deposit-proofs/');
+          filePath = parts[parts.length - 1];
+        } else if (!filePath.includes('/')) {
+          // Already a simple path
+          filePath = filePath;
+        } else {
+          // Try to extract UUID or filename from path
+          filePath = filePath.split('/').pop() || filePath;
+        }
+        
+        // Delete the image from storage
+        const { error: storageError } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
     }
     
     await supabase
@@ -391,7 +441,19 @@ const AdminDashboard = () => {
     // Try transactions (consultations/transfers)
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .select(`
+        *,
+        sender:profiles!user_id(
+          full_name,
+          avatar_url,
+          phone,
+          email
+        ),
+        doctor:doctors(
+          *,
+          medical_departments(*)
+        )
+      `)
       .eq("id", id)
       .maybeSingle();
 
@@ -789,7 +851,7 @@ const AdminDashboard = () => {
                       {selectedImage && (
                         <img src={selectedImage} alt="Proof" className="w-full rounded-lg" />
                       )}
-                      {req.status !== 'pending' && req.proof_image_url && (
+                      {req.proof_image_url && (
                         <div className="mt-4 flex justify-end">
                           <Button
                             variant="destructive"
@@ -798,14 +860,37 @@ const AdminDashboard = () => {
                             onClick={async () => {
                               const path: string = req.proof_image_url;
                               if (path) {
-                                const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([path]);
-                                if (delErr) {
-                                  toast({ title: 'خطأ', description: delErr.message, variant: 'destructive' });
-                                } else {
-                                  await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
-                                  toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
-                                  setSelectedImage('');
-                                  loadData();
+                                try {
+                                  // Extract the file path from URL if it's a full URL
+                                  let filePath = path;
+                                  if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
+                                    filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                                  } else if (path.includes('deposit-proofs/')) {
+                                    filePath = path.split('deposit-proofs/')[1];
+                                  }
+                                  
+                                  // Delete from storage
+                                  const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+                                  
+                                  if (delErr) {
+                                    console.error('Storage delete error:', delErr);
+                                    toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
+                                  } else {
+                                    // Update database
+                                    const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                                    
+                                    if (dbErr) {
+                                      console.error('Database update error:', dbErr);
+                                      toast({ title: 'خطأ في تحديث قاعدة البيانات', description: dbErr.message, variant: 'destructive' });
+                                    } else {
+                                      toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                      setSelectedImage('');
+                                      loadData();
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.error('Delete error:', error);
+                                  toast({ title: 'خطأ', description: 'حدث خطأ أثناء حذف الصورة', variant: 'destructive' });
                                 }
                               }
                             }}
@@ -816,6 +901,60 @@ const AdminDashboard = () => {
                       )}
                     </DialogContent>
                   </Dialog>
+
+                  {(req.status === 'approved' || req.status === 'rejected') && req.proof_image_url && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full rounded-full"
+                      onClick={async () => {
+                        const path: string = req.proof_image_url || '';
+                        if (path) {
+                          try {
+                            // Extract the file path from URL - handle different URL formats
+                            let filePath = path;
+                            if (path.includes('/storage/v1/object/public/deposit-proofs/')) {
+                              filePath = path.split('/storage/v1/object/public/deposit-proofs/')[1];
+                            } else if (path.includes('/storage/v1/object/sign/deposit-proofs/')) {
+                              filePath = path.split('/storage/v1/object/sign/deposit-proofs/')[1].split('?')[0];
+                            } else if (path.includes('deposit-proofs/')) {
+                              const parts = path.split('deposit-proofs/');
+                              filePath = parts[parts.length - 1];
+                            } else if (!path.includes('/')) {
+                              filePath = path;
+                            } else {
+                              filePath = path.split('/').pop() || path;
+                            }
+                            
+                            // Delete from storage
+                            const { error: delErr } = await supabase.storage.from('deposit-proofs').remove([filePath]);
+                            
+                            if (delErr) {
+                              console.error('Storage delete error:', delErr);
+                              toast({ title: 'خطأ في حذف الملف', description: delErr.message, variant: 'destructive' });
+                            } else {
+                              // Update database
+                              const { error: dbErr } = await supabase.from('deposit_requests').update({ proof_image_url: null }).eq('id', req.id);
+                              
+                              if (dbErr) {
+                                console.error('Database update error:', dbErr);
+                                toast({ title: 'خطأ في تحديث قاعدة البيانات', description: dbErr.message, variant: 'destructive' });
+                              } else {
+                                toast({ title: 'تم حذف الإثبات', description: 'تم حذف صورة الإثبات بنجاح' });
+                                loadData();
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Delete error:', error);
+                            toast({ title: 'خطأ', description: 'حدث خطأ أثناء حذف الصورة', variant: 'destructive' });
+                          }
+                        }
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      حذف صورة إثبات الدفع
+                    </Button>
+                  )}
 
                   {req.status === 'pending' && (
                     <>

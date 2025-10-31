@@ -118,14 +118,54 @@ const DoctorDashboard = () => {
 
     // Get transactions
     if (doctorData) {
-      const { data: transactionsData } = await supabase
+      const { data: transactionsData, error: txError } = await supabase
         .from("transactions")
-        .select("*, sender:profiles!transactions_user_id_fkey(full_name, avatar_url, phone, email)")
+        .select("*")
         .eq("doctor_id", doctorData.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      setTransactions(transactionsData || []);
+      if (txError) {
+        console.error("Error fetching transactions:", txError);
+        setTransactions([]);
+      } else if (transactionsData && transactionsData.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(transactionsData.map(tx => tx.user_id))];
+        
+        // Fetch all user profiles at once
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone, email")
+          .in("id", userIds);
+        
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+          // Set transactions without profiles if there's an error
+          setTransactions(transactionsData.map(tx => ({ ...tx, sender: null })));
+          return;
+        }
+        
+        // Create a map of user_id to profile for quick lookup
+        const profilesMap = new Map();
+        if (profilesData && profilesData.length > 0) {
+          profilesData.forEach(profile => {
+            profilesMap.set(profile.id, profile);
+          });
+        }
+        
+        // Map transactions with their profiles
+        const transactionsWithProfiles = transactionsData.map(tx => {
+          const profile = profilesMap.get(tx.user_id);
+          return {
+            ...tx,
+            sender: profile || null
+          };
+        });
+        
+        setTransactions(transactionsWithProfiles);
+      } else {
+        setTransactions([]);
+      }
 
       // Get withdraw requests
       const { data: withdrawData } = await supabase
@@ -149,11 +189,19 @@ const DoctorDashboard = () => {
     // Try transactions first (consultation/transfer)
     const { data: tx } = await supabase
       .from("transactions")
-      .select("*, sender:profiles!transactions_user_id_fkey(*), doctor:doctors(*, medical_departments(*))")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
-
+    
     if (tx) {
+      // Fetch user profile separately
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, phone, email, id")
+        .eq("id", tx.user_id)
+        .single();
+      
+      tx.sender = profile || null;
       setSearchKind("transaction");
       setSearchResult(tx);
       toast({ title: "تم العثور!", description: "تم العثور على العملية" });
@@ -529,14 +577,28 @@ const DoctorDashboard = () => {
               <div className="mt-4 p-4 bg-secondary rounded-lg space-y-2">
                 {searchKind === 'transaction' && (
                   <>
-                    <p><strong>العميل:</strong> {searchResult.profiles?.full_name}</p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="w-12 h-12 border-2 border-primary/20">
+                        <AvatarImage src={searchResult.sender?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
+                          {searchResult.sender?.full_name?.charAt(0) || 'م'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{searchResult.sender?.full_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {searchResult.sender?.phone && `📱 ${searchResult.sender?.phone}`}
+                          {searchResult.sender?.email && <span className="block">{searchResult.sender?.email}</span>}
+                        </p>
+                      </div>
+                    </div>
                         <p><strong>النقاط:</strong> {searchResult.amount} نقطة</p>
                     <p><strong>التاريخ:</strong> {new Date(searchResult.created_at).toLocaleString('ar-EG')}</p>
                     {searchResult.description && <p><strong>الوصف:</strong> {searchResult.description}</p>}
-                    {searchResult.doctors && (
+                    {searchResult.doctor && (
                       <div className="mt-2 p-2 rounded-md bg-background">
                         <p className="font-semibold">بيانات الطبيب</p>
-                        <p className="text-sm">{searchResult.doctors?.doctor_name} • {searchResult.doctors?.medical_departments?.name_ar}</p>
+                        <p className="text-sm">{searchResult.doctor?.doctor_name} • {searchResult.doctor?.medical_departments?.name_ar}</p>
                       </div>
                     )}
                   </>
@@ -558,39 +620,134 @@ const DoctorDashboard = () => {
         </Card>
 
             {/* Recent Transactions */}
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle>آخر الاستشارات</CardTitle>
-                <CardDescription>المستخدمين الذين تواصلوا معك</CardDescription>
+            <Card className="shadow-medium rounded-3xl border-0 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary-light/10 pb-4">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+                    <span className="text-white text-lg">💬</span>
+                  </div>
+                  آخر الاستشارات
+                </CardTitle>
+                <CardDescription className="text-sm mt-2">
+                  المستخدمين الذين تواصلوا معك للاستشارة
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {transactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
-                      <Avatar className="w-12 h-12 border-2 border-primary/20">
-                        <AvatarImage src={transaction.sender?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light text-white">
-                          {transaction.sender?.full_name?.charAt(0) || 'م'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-semibold">{transaction.sender?.full_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {transaction.sender?.phone && `📱 ${transaction.sender?.phone}`}
-                          {transaction.sender?.email && <span className="block">{transaction.sender?.email}</span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.created_at).toLocaleString('ar-EG')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">رقم العملية: {transaction.id}</p>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {transactions.map((transaction) => {
+                    const sender = transaction.sender;
+                    const displayName = sender?.full_name || 'مستخدم';
+                    const displayAvatar = sender?.avatar_url;
+                    const displayPhone = sender?.phone;
+                    const transactionDate = new Date(transaction.created_at);
+                    
+                    return (
+                      <div key={transaction.id} className="group relative bg-gradient-to-br from-background via-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                        {/* Decorative corner */}
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-2xl" />
+                        
+                        <div className="relative flex items-start gap-4">
+                          {/* Profile Image with Badge */}
+                          <div className="relative flex-shrink-0">
+                            <Avatar className="w-20 h-20 border-4 border-primary/30 shadow-lg ring-2 ring-primary/20">
+                              <AvatarImage src={displayAvatar || undefined} className="object-cover" />
+                              <AvatarFallback className="bg-gradient-to-br from-primary via-primary-light to-primary/80 text-white text-2xl font-bold">
+                                {displayName.charAt(0).toUpperCase() || 'م'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
+                          </div>
+                          
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            {/* Name and Amount Row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-lg text-foreground truncate">
+                                  {displayName}
+                                </h3>
+                                {displayPhone && (
+                                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                                    <span>📱</span>
+                                    <span>{displayPhone}</span>
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0 text-left">
+                                <div className="inline-flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full">
+                                  <span className="text-2xl font-bold text-primary">
+                                    {transaction.amount}
+                                  </span>
+                                  <span className="text-xs font-medium text-primary/80">نقطة</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Transaction Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-primary/10">
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary text-sm">📅</span>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground text-[10px]">التاريخ</p>
+                                  <p className="font-medium text-foreground">
+                                    {transactionDate.toLocaleDateString('ar-EG', { 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                  <p className="text-muted-foreground text-[10px]">
+                                    {transactionDate.toLocaleTimeString('ar-EG', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary text-sm">🆔</span>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground text-[10px]">رقم العملية</p>
+                                  <p className="font-mono font-medium text-foreground text-[10px] break-all">
+                                    {transaction.id}
+                                  </p>
+                                  <p className="text-muted-foreground text-[10px] mt-0.5">
+                                    ID: {transaction.user_id.slice(0, 8)}...
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-2 pt-1">
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-full">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                                  استشارة مكتملة
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-primary">{transaction.amount} نقطة</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  
                   {transactions.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">لا توجد استشارات بعد</p>
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/10 to-primary-light/10 flex items-center justify-center">
+                        <span className="text-4xl">📋</span>
+                      </div>
+                      <p className="text-muted-foreground text-lg font-medium">لا توجد استشارات بعد</p>
+                      <p className="text-muted-foreground text-sm mt-1">ستظهر الاستشارات هنا عند تواصل المستخدمين معك</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
