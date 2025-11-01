@@ -35,19 +35,22 @@ interface TemplateContent {
   preview: string;
   headline: string;
   greeting?: string;
-  paragraphs: string[];
+  paragraphs?: string[];
   highlights?: Highlight[];
   status?: { label: string; tone: Tone };
   footerNote?: string;
   cta?: { label: string; url: string };
+  secondaryCta?: { label: string; url: string };
+  customHtml?: string;
+  emoji?: string;
 }
 
-const TONE_STYLES: Record<Tone | "default", { gradient: [string, string]; accent: string; chipBg: string }> = {
-  default: { gradient: ["#6366F1", "#4338CA"], accent: "#4338CA", chipBg: "rgba(99, 102, 241, 0.18)" },
-  success: { gradient: ["#059669", "#047857"], accent: "#047857", chipBg: "rgba(5, 150, 105, 0.18)" },
-  info: { gradient: ["#0EA5E9", "#0284C7"], accent: "#0369A1", chipBg: "rgba(14, 165, 233, 0.20)" },
-  danger: { gradient: ["#EF4444", "#B91C1C"], accent: "#B91C1C", chipBg: "rgba(239, 68, 68, 0.18)" },
-  warning: { gradient: ["#F59E0B", "#D97706"], accent: "#B45309", chipBg: "rgba(245, 158, 11, 0.20)" },
+const TONE_STYLES: Record<Tone | "default", { gradient: [string, string]; accent: string; chipBg: string; pillBg: string }> = {
+  default: { gradient: ["#6366F1", "#4338CA"], accent: "#4338CA", chipBg: "rgba(99, 102, 241, 0.18)", pillBg: "rgba(99, 102, 241, 0.12)" },
+  success: { gradient: ["#059669", "#047857"], accent: "#047857", chipBg: "rgba(5, 150, 105, 0.18)", pillBg: "rgba(5, 150, 105, 0.12)" },
+  info: { gradient: ["#0EA5E9", "#0369A1"], accent: "#0369A1", chipBg: "rgba(14, 165, 233, 0.20)", pillBg: "rgba(14, 165, 233, 0.12)" },
+  danger: { gradient: ["#EF4444", "#B91C1C"], accent: "#B91C1C", chipBg: "rgba(239, 68, 68, 0.18)", pillBg: "rgba(239, 68, 68, 0.12)" },
+  warning: { gradient: ["#F59E0B", "#D97706"], accent: "#B45309", chipBg: "rgba(245, 158, 11, 0.20)", pillBg: "rgba(245, 158, 11, 0.14)" },
 };
 
 function escapeHtml(value: unknown): string {
@@ -57,6 +60,14 @@ function escapeHtml(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function stripHtmlTags(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatCurrency(value: unknown): string | null {
@@ -74,7 +85,45 @@ function optionalString(value: unknown): string | null {
   return text ? text : null;
 }
 
-function sanitizeParagraphs(paragraphs: (string | null | undefined)[]): string[] {
+function sanitizeUrl(value?: string | null): string | null {
+  const raw = optionalString(value);
+  if (!raw) return null;
+  try {
+    const candidate = new URL(raw, BASE_APP_URL);
+    const protocol = candidate.protocol.toLowerCase();
+    if (protocol === "http:" || protocol === "https:") {
+      return candidate.href;
+    }
+  } catch (_error) {
+    // ignore
+  }
+  return null;
+}
+
+function sanitizeCustomHtml(html?: string | null): string | null {
+  const raw = optionalString(html);
+  if (!raw) return null;
+  let clean = raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<link[\s\S]*?>/gi, "")
+    .replace(/<meta[\s\S]*?>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<form[\s\S]*?<\/form>/gi, "")
+    .replace(/<input[\s\S]*?>/gi, "")
+    .replace(/<button[\s\S]*?<\/button>/gi, "");
+
+  clean = clean
+    .replace(/on[a-z]+\s*=\s*"[^"]*"/gi, "")
+    .replace(/on[a-z]+\s*=\s*'[^']*'/gi, "")
+    .replace(/on[a-z]+\s*=\s*[^\s>]+/gi, "")
+    .replace(/javascript:\s*/gi, "")
+    .replace(/data:(?!image\/(?:png|jpeg|jpg|gif))/gi, "");
+
+  return clean.trim() ? clean : null;
+}
+
+function sanitizeParagraphs(paragraphs: (string | null | undefined)[] = []): string[] {
   return paragraphs
     .map((paragraph) => optionalString(paragraph))
     .filter((paragraph): paragraph is string => Boolean(paragraph));
@@ -84,12 +133,26 @@ function buildTextVersion(content: TemplateContent): string {
   const lines: string[] = [];
   lines.push(content.headline);
   if (content.greeting) lines.push(content.greeting);
-  lines.push(...content.paragraphs);
+  if (content.paragraphs?.length) {
+    lines.push(...content.paragraphs);
+  }
 
-  if (content.highlights) {
+  if (content.highlights?.length) {
     for (const highlight of content.highlights) {
       lines.push(`${highlight.label}: ${highlight.value}`);
     }
+  }
+
+  if (content.customHtml) {
+    const plain = stripHtmlTags(content.customHtml);
+    if (plain) lines.push(plain);
+  }
+
+  if (content.cta) {
+    lines.push(`رابط هام: ${content.cta.label} — ${content.cta.url}`);
+  }
+  if (content.secondaryCta) {
+    lines.push(`رابط إضافي: ${content.secondaryCta.label} — ${content.secondaryCta.url}`);
   }
 
   if (content.footerNote) {
@@ -106,52 +169,64 @@ function renderEmail(content: TemplateContent): string {
   const toneStyle = content.status ? TONE_STYLES[content.status.tone] : TONE_STYLES.default;
   const headerGradient = `linear-gradient(135deg, ${toneStyle.gradient[0]} 0%, ${toneStyle.gradient[1]} 100%)`;
   const currentYear = new Date().getFullYear();
-  const preview = escapeHtml(content.preview || content.paragraphs[0] || COMPANY_NAME);
-  const greetingHtml = content.greeting
-    ? `<p style="margin:0 0 16px; font-size:16px; color:#1f2937; font-weight:600;">${escapeHtml(content.greeting)}</p>`
-    : "";
-  const paragraphsHtml = content.paragraphs
-    .map(
-      (paragraph) =>
-        `<p style="margin:0 0 16px; font-size:15px; line-height:1.9; color:#1f2937;">${escapeHtml(paragraph)}</p>`
-    )
-    .join("");
+  const preview = escapeHtml(content.preview || content.paragraphs?.[0] || COMPANY_NAME);
 
-  const highlightRows = content.highlights?.length
-    ? content.highlights
+  const greetingHtml = content.greeting
+    ? `<p style="margin:0 0 18px; font-size:16px; color:#1f2937; font-weight:700;">${escapeHtml(content.greeting)}</p>`
+    : "";
+
+  const paragraphsHtml = content.paragraphs?.length
+    ? content.paragraphs
         .map(
-          (highlight, index, arr) => `
-            <tr>
-              <td style="padding:12px 16px; font-size:14px; color:#475569; font-weight:600; background-color:#f8fafc; border-bottom:${index === arr.length - 1 ? "none" : "1px solid #e2e8f0"}; width:35%;">
-                ${escapeHtml(highlight.label)}
-              </td>
-              <td style="padding:12px 16px; font-size:14px; color:#1f2937; background-color:#ffffff; border-bottom:${index === arr.length - 1 ? "none" : "1px solid #e2e8f0"};">
-                ${escapeHtml(highlight.value)}
-              </td>
-            </tr>
-          `
+          (paragraph) =>
+            `<p style="margin:0 0 16px; font-size:15px; line-height:1.9; color:#1f2937;">${escapeHtml(paragraph)}</p>`
         )
         .join("")
     : "";
 
-  const highlightsHtml = highlightRows
+  const highlightsHtml = content.highlights?.length
     ? `
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:24px 0; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden;">
-          ${highlightRows}
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:22px 0; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+          ${content.highlights
+            .map(
+              (highlight, index, arr) => `
+                <tr>
+                  <td style="padding:14px 18px; font-size:13px; color:#475569; font-weight:700; background-color:#f8fafc; border-bottom:${index === arr.length - 1 ? "none" : "1px solid #e2e8f0"}; width:38%;">
+                    ${escapeHtml(highlight.label)}
+                  </td>
+                  <td style="padding:14px 18px; font-size:14px; color:#1f2937; background-color:#ffffff; border-bottom:${index === arr.length - 1 ? "none" : "1px solid #e2e8f0"};">
+                    ${escapeHtml(highlight.value)}
+                  </td>
+                </tr>
+              `
+            )
+            .join("")}
         </table>
       `
     : "";
 
-  const statusHtml = content.status
-    ? `<span style="display:inline-block; margin-top:18px; padding:8px 18px; border-radius:999px; background:${toneStyle.chipBg}; color:${toneStyle.accent}; font-size:13px; font-weight:600;">${escapeHtml(content.status.label)}</span>`
+  const customHtmlSection = content.customHtml
+    ? `<div style="margin:24px 0 0; font-size:15px; line-height:1.8; color:#1f2937;">${content.customHtml}</div>`
     : "";
 
   const ctaHtml = content.cta
-    ? `<a href="${escapeHtml(content.cta.url)}" style="display:inline-block; margin:24px 0 8px; padding:14px 28px; background:${toneStyle.accent}; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:999px;">${escapeHtml(content.cta.label)}</a>`
+    ? `<a href="${escapeHtml(content.cta.url)}" style="display:inline-block; margin:28px 0 8px; padding:13px 28px; border-radius:999px; background:${toneStyle.accent}; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none;">${escapeHtml(content.cta.label)}</a>`
+    : "";
+
+  const secondaryCtaHtml = content.secondaryCta
+    ? `<div style="margin-top:6px;"><a href="${escapeHtml(content.secondaryCta.url)}" style="color:${toneStyle.accent}; font-size:14px; font-weight:600; text-decoration:none;">${escapeHtml(content.secondaryCta.label)}</a></div>`
     : "";
 
   const footerNoteHtml = content.footerNote
-    ? `<div style="margin-top:24px; padding:16px 18px; border-radius:12px; background-color:#f1f5f9; color:#475569; font-size:13px;">${escapeHtml(content.footerNote)}</div>`
+    ? `<div style="margin-top:24px; padding:16px 18px; border-radius:14px; background-color:#f1f5f9; color:#475569; font-size:13px;">${escapeHtml(content.footerNote)}</div>`
+    : "";
+
+  const statusHtml = content.status
+    ? `<span style="display:inline-block; margin-top:16px; padding:8px 20px; border-radius:999px; background:${toneStyle.chipBg}; color:${toneStyle.accent}; font-size:13px; font-weight:700;">${escapeHtml(content.status.label)}</span>`
+    : "";
+
+  const emojiHtml = content.emoji
+    ? `<div style="width:68px; height:68px; margin:0 auto 18px; border-radius:24px; background:${toneStyle.pillBg}; display:flex; align-items:center; justify-content:center; font-size:36px;">${escapeHtml(content.emoji)}</div>`
     : "";
 
   return `<!DOCTYPE html>
@@ -163,40 +238,58 @@ function renderEmail(content: TemplateContent): string {
     <style>
       @media (max-width: 640px) {
         .email-container { width: 100% !important; border-radius: 0 !important; }
+        .content-padding { padding: 28px 22px !important; }
       }
     </style>
   </head>
-  <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:'Tajawal','Cairo','Helvetica Neue',Arial,sans-serif;">
-    <div style="display:none; max-height:0; overflow:hidden; font-size:1px; color:#f4f6fb;">${preview}</div>
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0; padding:32px 16px; background-color:#f4f6fb;">
+  <body style="margin:0; padding:0; background-color:#ecf1fb; font-family:'Tajawal','Cairo','Helvetica Neue',Arial,sans-serif;">
+    <div style="display:none; max-height:0; overflow:hidden; font-size:1px; color:#ecf1fb;">${preview}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0; padding:28px 14px; background-color:#ecf1fb;">
       <tr>
         <td align="center">
-          <table role="presentation" cellpadding="0" cellspacing="0" width="620" class="email-container" style="max-width:620px; background-color:#ffffff; border-radius:22px; overflow:hidden; box-shadow:0 20px 50px rgba(15, 23, 42, 0.1);">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="640" class="email-container" style="max-width:640px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px rgba(15, 23, 42, 0.12);">
             <tr>
-              <td style="padding:36px 32px 32px; text-align:center; background:${headerGradient}; color:#ffffff;">
-                <img src="${escapeHtml(LOGO_URL)}" alt="${escapeHtml(COMPANY_NAME)}" style="max-width:110px; margin-bottom:18px;" />
-                <h1 style="margin:0; font-size:26px; letter-spacing:0.03em; font-weight:800;">${escapeHtml(content.headline)}</h1>
+              <td style="padding:26px 32px; background:#0f172a;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="color:#e2e8f0; font-size:13px; font-weight:600;">${escapeHtml(COMPANY_NAME)}</td>
+                    <td style="text-align:left; font-size:13px;">
+                      <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color:#94a3b8; text-decoration:none; font-weight:600;">الدعم الفني</a>
+                      <span style="margin:0 8px; color:#475569;">•</span>
+                      <a href="${escapeHtml(BASE_APP_URL)}" style="color:#94a3b8; text-decoration:none; font-weight:600;">زيارة الموقع</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:40px 32px 36px; text-align:center; background:${headerGradient}; color:#ffffff;">
+                <div style="margin-bottom:16px;">
+                  <img src="${escapeHtml(LOGO_URL)}" alt="${escapeHtml(COMPANY_NAME)}" style="max-width:120px;" />
+                </div>
+                ${emojiHtml}
+                <h1 style="margin:0; font-size:28px; letter-spacing:0.02em; font-weight:800;">${escapeHtml(content.headline)}</h1>
                 ${statusHtml}
               </td>
             </tr>
             <tr>
-              <td style="padding:36px 32px;">
+              <td class="content-padding" style="padding:34px 36px 38px;">
                 ${greetingHtml}
                 ${paragraphsHtml}
                 ${highlightsHtml}
+                ${customHtmlSection}
                 ${ctaHtml}
-                <p style="margin:24px 0 0; color:#1f2937; font-weight:600;">مع خالص التحية،</p>
-                <p style="margin:4px 0 0; color:#1f2937;">فريق ${escapeHtml(COMPANY_NAME)}</p>
-                <p style="margin:12px 0 0; color:#64748b; font-size:13px;">للتواصل معنا: <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color:${toneStyle.accent}; text-decoration:none;">${escapeHtml(SUPPORT_EMAIL)}</a></p>
+                ${secondaryCtaHtml}
+                <p style="margin:28px 0 0; color:#1f2937; font-weight:700;">مع خالص التحية،</p>
+                <p style="margin:6px 0; color:#1f2937;">فريق ${escapeHtml(COMPANY_NAME)}</p>
+                <p style="margin:8px 0 0; color:#64748b; font-size:13px;">للتواصل معنا: <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color:${toneStyle.accent}; text-decoration:none; font-weight:600;">${escapeHtml(SUPPORT_EMAIL)}</a></p>
                 ${footerNoteHtml}
               </td>
             </tr>
             <tr>
               <td style="padding:20px 32px 28px; text-align:center; background-color:#0f172a; color:#e2e8f0; font-size:12px;">
                 <p style="margin:0 0 8px;">© ${currentYear} ${escapeHtml(COMPANY_NAME)}. جميع الحقوق محفوظة.</p>
-                <p style="margin:0;">
-                  <a href="${escapeHtml(BASE_APP_URL)}" style="color:#94a3b8; text-decoration:none;">${escapeHtml(BASE_HOST)}</a>
-                </p>
+                <p style="margin:0;"><a href="${escapeHtml(BASE_APP_URL)}" style="color:#94a3b8; text-decoration:none;">${escapeHtml(BASE_HOST)}</a></p>
               </td>
             </tr>
           </table>
@@ -214,23 +307,29 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
   const method = optionalString(data?.method);
   const reference = optionalString(data?.reference) || optionalString(data?.transaction_id);
   const notes = optionalString(data?.notes);
+  const customHtml = sanitizeCustomHtml(data?.html || data?.custom_html);
+  const customEmoji = optionalString(data?.emoji) || optionalString(data?.icon);
+  const footerNote = optionalString(data?.footer_note);
 
   switch (type) {
     case "welcome": {
-      const paragraphs = sanitizeParagraphs([
-        "يسعدنا انضمامك إلى منصتنا والحصول على أفضل التجارب الطبية الرقمية.",
-        "حسابك أصبح جاهزاً الآن، ويمكنك البدء فوراً في حجز الاستشارات أو تصفح الأطباء المعتمدين لدينا.",
-      ]);
-
       return {
         subject: "مرحباً بك في Egyptian AI",
         preview: "حسابك أصبح جاهزاً ويمكنك البدء فوراً في استخدام المنصة.",
         headline: "مرحباً بك في عائلتنا الطبية",
         greeting: name ? `مرحباً ${name}!` : "مرحباً بك!",
-        paragraphs,
+        paragraphs: sanitizeParagraphs([
+          "يسعدنا انضمامك إلى منصتنا للحصول على تجربة طبية رقمية متكاملة.",
+          "يمكنك البدء في استكشاف الأطباء والخدمات الطبية المتاحة فوراً.",
+        ]),
         status: { label: "حسابك مفعل", tone: "success" },
-        footerNote: "ننصحك بإكمال بياناتك الشخصية داخل المنصة لضمان تجربة سلسة ومتكاملة.",
-        cta: { label: "بدء استخدام المنصة", url: `${BASE_APP_URL}/` },
+        footerNote: footerNote || "ننصحك بإكمال بياناتك الشخصية لتعزيز ثقتك لدى الأطباء وتسهيل التواصل.",
+        cta: { label: "بدء استخدام المنصة", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/` },
+        secondaryCta: sanitizeUrl(data?.cta_secondary_url) && optionalString(data?.cta_secondary_label)
+          ? { label: data.cta_secondary_label, url: sanitizeUrl(data?.cta_secondary_url)! }
+          : undefined,
+        customHtml,
+        emoji: customEmoji || "✨",
       };
     }
     case "deposit_received": {
@@ -242,15 +341,17 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       return {
         subject: "تم استلام طلب الإيداع",
         preview: amountText ? `استلمنا طلب الإيداع بقيمة ${amountText} وجاري مراجعته.` : "استلمنا طلب الإيداع الخاص بك وجاري مراجعته.",
-        headline: "تم استلام طلب الإيداع",
+        headline: "طلب الإيداع قيد المراجعة",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "استلمنا طلب الإيداع الخاص بك وبدأ فريقنا في مراجعته والتأكد من تفاصيل العملية.",
-          "سنعلمك فور الانتهاء من المراجعة بالموافقة أو في حال الحاجة لأي معلومات إضافية.",
+          "استلمنا طلب الإيداع الخاص بك وتم تحويله إلى الفريق المالي للتدقيق.",
+          "ستصلك رسالة فور اعتماد العملية أو طلب معلومات إضافية إن لزم الأمر.",
         ]),
         highlights,
         status: { label: "قيد المراجعة", tone: "info" },
-        footerNote: "يرجى الاحتفاظ بإيصال الدفع لحين اعتماد العملية بالكامل.",
+        footerNote: footerNote || "يرجى الاحتفاظ بإيصال الدفع لحين تأكيد العملية بالكامل.",
+        customHtml,
+        emoji: customEmoji || "🧾",
       };
     }
     case "deposit_approved": {
@@ -264,13 +365,17 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         headline: "مبروك! تم إضافة الرصيد",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "تم اعتماد عملية الإيداع بنجاح، وأصبح رصيدك متاحاً للاستخدام فوراً داخل المنصة.",
-          "يمكنك الآن البدء في حجز الاستشارات أو شراء الخدمات الطبية المتاحة.",
+          "تم اعتماد عملية الإيداع بنجاح وأصبح رصيدك متاحاً للاستخدام فوراً.",
+          "يمكنك الآن حجز الاستشارات أو استكشاف الخدمات المتاحة داخل المنصة.",
         ]),
         highlights,
         status: { label: "تمت الموافقة", tone: "success" },
-        footerNote: "يمكنك مراجعة تفاصيل محفظتك في أي وقت من خلال صفحة المحفظة داخل التطبيق.",
-        cta: { label: "عرض المحفظة", url: `${BASE_APP_URL}/wallet` },
+        footerNote: footerNote || "تستطيع متابعة تفاصيل محفظتك من خلال صفحة المحفظة في أي وقت.",
+        cta: sanitizeUrl(data?.cta_url)
+          ? { label: optionalString(data?.cta_label) || "عرض المحفظة", url: sanitizeUrl(data?.cta_url)! }
+          : { label: "عرض المحفظة", url: `${BASE_APP_URL}/wallet` },
+        customHtml,
+        emoji: customEmoji || "💰",
       };
     }
     case "deposit_rejected": {
@@ -284,17 +389,19 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         headline: "تعذر إتمام عملية الإيداع",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "نأسف لإبلاغك بأنه تعذر اعتماد طلب الإيداع في الوقت الحالي.",
-          "تجد تفاصيل السبب بالأسفل، ويمكنك إعادة المحاولة بعد مراجعة البيانات المطلوبة.",
+          "نأسف لتعذر اعتماد طلب الإيداع في الوقت الحالي.",
+          "برجاء مراجعة التفاصيل أدناه وإعادة المحاولة بعد استكمال المتطلبات.",
         ]),
         highlights,
         status: { label: "لم يتم الاعتماد", tone: "danger" },
-        footerNote: "فريق الدعم لدينا متواجد دائماً لمساعدتك على إتمام العملية بنجاح.",
+        footerNote: footerNote || "يسعد فريق الدعم بمراجعة أي استفسار لديك حول العملية.",
+        customHtml,
+        emoji: customEmoji || "⚠️",
       };
     }
     case "withdraw_received": {
       const highlights: Highlight[] = [];
-      if (amountText) highlights.push({ label: "المبلغ الصافي المطلوب", value: amountText });
+      if (amountText) highlights.push({ label: "المبلغ الصافي", value: amountText });
       if (reference) highlights.push({ label: "رقم الطلب", value: reference });
 
       return {
@@ -303,18 +410,20 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         headline: "طلب السحب قيد المراجعة",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "استلمنا طلب السحب الخاص بك، وسيتم مراجعته من قبل الفريق المالي بأسرع وقت ممكن.",
-          "سنبلغك فور اعتماد التحويل أو في حال احتجنا لأي بيانات إضافية.",
+          "استلمنا طلب السحب الخاص بك وسيتم مراجعته خلال فترة قصيرة.",
+          "سنقوم بإبلاغك فور اعتماد التحويل أو الحاجة لأي معلومات إضافية.",
         ]),
         highlights,
         status: { label: "قيد المراجعة", tone: "info" },
-        footerNote: "عادة ما تتم الموافقة خلال 24 ساعة عمل كحد أقصى.",
+        footerNote: footerNote || "عادة ما تتم الموافقة خلال 24 ساعة عمل كحد أقصى.",
+        customHtml,
+        emoji: customEmoji || "📩",
       };
     }
     case "withdraw_approved": {
       const highlights: Highlight[] = [];
       if (amountText) highlights.push({ label: "المبلغ المحول", value: amountText });
-      if (notes) highlights.push({ label: "ملاحظات الفريق", value: notes });
+      if (notes) highlights.push({ label: "ملاحظات إضافية", value: notes });
 
       return {
         subject: "تم اعتماد طلب السحب",
@@ -322,12 +431,14 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         headline: "تم تحويل المبلغ",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "تم اعتماد طلب السحب الخاص بك، وسيصل المبلغ إلى حسابك خلال فترة وجيزة بحسب البنك أو المحفظة المستخدمة.",
-          "نشكر لك ثقتك في المنصة ونتمنى لك يوماً سعيداً.",
+          "تم اعتماد طلب السحب الخاص بك وسيصل المبلغ لحسابك خلال المدة المتعارف عليها.",
+          "يسعدنا استمرارك كجزء من مجتمع الأطباء بالمنصة.",
         ]),
         highlights,
         status: { label: "تم التحويل", tone: "success" },
-        footerNote: "في حال لم يصلك المبلغ خلال المدة المتوقعة، يرجى التواصل معنا فوراً.",
+        footerNote: footerNote || "في حال تأخر وصول المبلغ نرجو التواصل معنا فوراً.",
+        customHtml,
+        emoji: customEmoji || "💸",
       };
     }
     case "withdraw_rejected": {
@@ -338,15 +449,17 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       return {
         subject: "تعذر إتمام طلب السحب",
         preview: "يوجد تحديث بخصوص طلب السحب الخاص بك – يرجى مراجعة التفاصيل.",
-        headline: "تعذر إتمام طلب السحب",
+        headline: "طلب السحب يحتاج مراجعة",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
-          "نعتذر عن عدم القدرة على إتمام طلب السحب في الوقت الحالي.",
-          "ستجد تفاصيل السبب في الأسفل، ويمكنك تقديم طلب جديد بعد معالجة الملاحظات المذكورة.",
+          "نعتذر عن عدم إمكانية إتمام طلب السحب في الوقت الحالي.",
+          "بعد تصحيح الملاحظات يمكن تقديم الطلب مجدداً بكل سهولة.",
         ]),
         highlights,
         status: { label: "لم يتم التحويل", tone: "danger" },
-        footerNote: "إذا كنت بحاجة للمساعدة أو التوضيح، يسعدنا تواصلك معنا في أي وقت.",
+        footerNote: footerNote || "فريقنا متواجد لمساعدتك في معرفة الخطوات المطلوبة لاستكمال العملية.",
+        customHtml,
+        emoji: customEmoji || "🚫",
       };
     }
     case "doctor_request_approved": {
@@ -356,18 +469,20 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       if (notes) highlights.push({ label: "ملاحظات إضافية", value: notes });
 
       return {
-        subject: "تم قبول طلبك كطبيب في Egyptian AI",
+        subject: "تم قبول طلبك كطبيب",
         preview: "يمكنك الآن الدخول إلى لوحة الطبيب وبدء تقديم الاستشارات.",
-        headline: "مرحباً بك ضمن أطبائنا المعتمدين",
+        headline: "مرحباً بك ضمن أطبائنا",
         greeting: name ? `د/ ${name} العزيز` : "دكتورنا العزيز",
         paragraphs: sanitizeParagraphs([
-          "يسعدنا إبلاغك بقبول طلبك للانضمام كطبيب داخل المنصة.",
-          "يمكنك الآن الدخول إلى لوحة التحكم الخاصة بالأطباء لإكمال بياناتك وتفعيل مواعيدك.",
+          "يشرفنا انضمامك إلى شبكة الأطباء لدينا، وتم تفعيل حسابك بنجاح.",
+          "يمكنك الآن إكمال ملفك الطبي وإتاحة مواعيد الاستشارات للمرضى.",
         ]),
         highlights,
         status: { label: "طبيب معتمد", tone: "success" },
-        footerNote: "ننصحك بإكمال ملفك الطبي وإضافة تفاصيل الاستشارات لبدء استقبال المرضى فوراً.",
-        cta: { label: "الانتقال إلى لوحة الطبيب", url: `${BASE_APP_URL}/doctor-dashboard` },
+        footerNote: footerNote || "ننصحك بإضافة نبذة تعريفية وصور معتمدة لبناء ثقة أعلى مع المرضى.",
+        cta: { label: "الدخول إلى لوحة الطبيب", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/doctor-dashboard` },
+        customHtml,
+        emoji: customEmoji || "🩺",
       };
     }
     case "doctor_request_rejected": {
@@ -377,15 +492,17 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       return {
         subject: "تحديث بشأن طلب التسجيل كطبيب",
         preview: "نعتذر عن قبول الطلب حالياً – التفاصيل داخل الرسالة.",
-        headline: "طلب التسجيل يحتاج إلى تعديل",
+        headline: "طلب التسجيل يحتاج تعديل",
         greeting: friendlyGreeting,
         paragraphs: sanitizeParagraphs([
           "بعد مراجعة طلبك، نعتذر عن عدم إمكانية الموافقة عليه في الوقت الحالي.",
-          "يمكنك إعادة التقديم بمجرد تلافي الملاحظات المذكورة.",
+          "يمكنك إعادة التقديم بمجرد استكمال المتطلبات المذكورة.",
         ]),
         highlights,
         status: { label: "الطلب مرفوض مؤقتاً", tone: "warning" },
-        footerNote: "يسعد فريقنا بمساعدتك في حال احتجت لمعرفة المتطلبات اللازمة لإعادة التقديم.",
+        footerNote: footerNote || "يسعد فريق الدعم بإرشادك إلى المطلوب لإعادة التقديم بنجاح.",
+        customHtml,
+        emoji: customEmoji || "📋",
       };
     }
     case "custom": {
@@ -393,16 +510,24 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       const message = optionalString(data?.message) || "";
       const paragraphs = message
         ? sanitizeParagraphs(message.split(/\r?\n\r?\n|\r?\n/))
-        : [];
-      const preview = paragraphs[0] || "لدينا رسالة جديدة لك من فريق Egyptian AI.";
+        : undefined;
+      const preview = optionalString(data?.preview) || paragraphs?.[0] || "لدينا رسالة جديدة لك من فريق Egyptian AI.";
+      const ctaLabel = optionalString(data?.cta_label);
+      const ctaUrl = sanitizeUrl(data?.cta_url);
+      const secondaryLabel = optionalString(data?.cta_secondary_label);
+      const secondaryUrl = sanitizeUrl(data?.cta_secondary_url);
 
       return {
         subject,
         preview,
-        headline: subject,
+        headline: optionalString(data?.headline) || subject,
         greeting: optionalString(data?.greeting) || friendlyGreeting,
-        paragraphs: paragraphs.length ? paragraphs : ["يسعدنا تواصلك معنا، ونرسل لك التفاصيل التالية:"],
-        footerNote: optionalString(data?.footerNote) || "لا تتردد في الرد على هذه الرسالة إذا كان لديك أي استفسار.",
+        paragraphs,
+        footerNote: footerNote || optionalString(data?.footerNote),
+        cta: ctaLabel && ctaUrl ? { label: ctaLabel, url: ctaUrl } : undefined,
+        secondaryCta: secondaryLabel && secondaryUrl ? { label: secondaryLabel, url: secondaryUrl } : undefined,
+        customHtml,
+        emoji: customEmoji || "✉️",
       };
     }
     default:

@@ -32,9 +32,11 @@ const AdminDashboard = () => {
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [emailHtml, setEmailHtml] = useState("");
   const [bulkEmailTarget, setBulkEmailTarget] = useState<"all" | "users" | "doctors">("all");
   const [bulkEmailSubject, setBulkEmailSubject] = useState("");
   const [bulkEmailMessage, setBulkEmailMessage] = useState("");
+  const [bulkEmailHtml, setBulkEmailHtml] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -514,24 +516,36 @@ const AdminDashboard = () => {
   };
 
   const sendCustomEmail = async () => {
-    if (!emailRecipient || !emailSubject || !emailMessage) {
+    const hasMessage = emailMessage.trim().length > 0;
+    const hasHtml = emailHtml.trim().length > 0;
+
+    if (!emailRecipient || !emailSubject || (!hasMessage && !hasHtml)) {
       toast({
         title: "خطأ",
-        description: "الرجاء ملء جميع الحقول",
+        description: "الرجاء إدخال البريد والمستلم مع نص أو محتوى HTML",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await sendTransactionalEmail({
+      const payload: any = {
         type: "custom",
         to: emailRecipient,
         data: {
           subject: emailSubject,
-          message: emailMessage,
         },
-      });
+      };
+
+      if (hasMessage) {
+        payload.data.message = emailMessage;
+      }
+
+      if (hasHtml) {
+        payload.data.html = emailHtml;
+      }
+
+      await sendTransactionalEmail(payload);
 
       toast({
         title: "تم الإرسال!",
@@ -542,6 +556,7 @@ const AdminDashboard = () => {
       setEmailRecipient("");
       setEmailSubject("");
       setEmailMessage("");
+      setEmailHtml("");
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -552,10 +567,13 @@ const AdminDashboard = () => {
   };
 
   const sendBulkEmail = async () => {
-    if (!bulkEmailSubject || !bulkEmailMessage) {
+    const hasMessage = bulkEmailMessage.trim().length > 0;
+    const hasHtml = bulkEmailHtml.trim().length > 0;
+
+    if (!bulkEmailSubject || (!hasMessage && !hasHtml)) {
       toast({
         title: "خطأ",
-        description: "الرجاء ملء جميع الحقول",
+        description: "الرجاء إدخال موضوع وإما نص أو محتوى HTML",
         variant: "destructive",
       });
       return;
@@ -602,14 +620,23 @@ const AdminDashboard = () => {
 
       for (const profile of validProfiles) {
         try {
-          await sendTransactionalEmail({
+          const payload: any = {
             type: "custom",
             to: profile.email,
             data: {
               subject: bulkEmailSubject,
-              message: bulkEmailMessage,
             },
-          });
+          };
+
+          if (hasMessage) {
+            payload.data.message = bulkEmailMessage;
+          }
+
+          if (hasHtml) {
+            payload.data.html = bulkEmailHtml;
+          }
+
+          await sendTransactionalEmail(payload);
           successCount++;
         } catch {
           failCount++;
@@ -627,6 +654,7 @@ const AdminDashboard = () => {
       // Reset form
       setBulkEmailSubject("");
       setBulkEmailMessage("");
+      setBulkEmailHtml("");
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -1380,6 +1408,22 @@ const AdminDashboard = () => {
                     rows={8}
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center justify-between">
+                    محتوى HTML (اختياري)
+                    <span className="text-xs text-muted-foreground">ألصق كود HTML وسيتم دمجه مع القالب</span>
+                  </label>
+                  <Textarea
+                    value={emailHtml}
+                    onChange={(e) => setEmailHtml(e.target.value)}
+                    placeholder="<section>...</section>"
+                    className="rounded-2xl min-h-[160px] font-mono text-xs"
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    يتم تنظيف الكود تلقائياً (إزالة السكربتات) مع الحفاظ على الهوية البصرية للبريد.
+                  </p>
+                </div>
                 <Button 
                   onClick={sendCustomEmail}
                   className="w-full rounded-full"
@@ -1428,6 +1472,22 @@ const AdminDashboard = () => {
                     className="rounded-2xl min-h-[200px]"
                     rows={8}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center justify-between">
+                    محتوى HTML (اختياري)
+                    <span className="text-xs text-muted-foreground">سيتم إرساله لجميع المستهدفين</span>
+                  </label>
+                  <Textarea
+                    value={bulkEmailHtml}
+                    onChange={(e) => setBulkEmailHtml(e.target.value)}
+                    placeholder="<table>...</table>"
+                    className="rounded-2xl min-h-[160px] font-mono text-xs"
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    تحذير: لا تستخدم سكربتات أو روابط غير آمنة، وسيتم تنظيف الكود قبل الإرسال.
+                  </p>
                 </div>
                 <Button 
                   onClick={sendBulkEmail}
