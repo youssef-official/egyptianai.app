@@ -25,9 +25,16 @@ const corsHeaders = {
 
 type Tone = "success" | "info" | "danger" | "warning";
 
+type ToneKey = Tone | "default";
+
 interface Highlight {
   label: string;
   value: string;
+}
+
+interface CtaContent {
+  label: string;
+  url: string;
 }
 
 interface TemplateContent {
@@ -39,18 +46,69 @@ interface TemplateContent {
   highlights?: Highlight[];
   status?: { label: string; tone: Tone };
   footerNote?: string;
-  cta?: { label: string; url: string };
-  secondaryCta?: { label: string; url: string };
+  cta?: CtaContent;
+  secondaryCta?: CtaContent;
   customHtml?: string;
   emoji?: string;
+  heroImage?: { url: string; alt: string };
+  heroBadge?: { label: string; tone: ToneKey };
 }
 
-const TONE_STYLES: Record<Tone | "default", { gradient: [string, string]; accent: string; chipBg: string; pillBg: string }> = {
+const TONE_STYLES: Record<ToneKey, { gradient: [string, string]; accent: string; chipBg: string; pillBg: string }> = {
   default: { gradient: ["#6366F1", "#4338CA"], accent: "#4338CA", chipBg: "rgba(99, 102, 241, 0.18)", pillBg: "rgba(99, 102, 241, 0.12)" },
   success: { gradient: ["#059669", "#047857"], accent: "#047857", chipBg: "rgba(5, 150, 105, 0.18)", pillBg: "rgba(5, 150, 105, 0.12)" },
   info: { gradient: ["#0EA5E9", "#0369A1"], accent: "#0369A1", chipBg: "rgba(14, 165, 233, 0.20)", pillBg: "rgba(14, 165, 233, 0.12)" },
   danger: { gradient: ["#EF4444", "#B91C1C"], accent: "#B91C1C", chipBg: "rgba(239, 68, 68, 0.18)", pillBg: "rgba(239, 68, 68, 0.12)" },
   warning: { gradient: ["#F59E0B", "#D97706"], accent: "#B45309", chipBg: "rgba(245, 158, 11, 0.20)", pillBg: "rgba(245, 158, 11, 0.14)" },
+};
+
+const ALLOWED_TONES: Tone[] = ["success", "info", "danger", "warning"];
+
+const DEFAULT_HERO_IMAGES: Record<string, { url: string; alt: string }> = {
+  default: {
+    url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    alt: "فريق الرعاية الطبية في منصة Egyptian AI",
+  },
+  welcome: {
+    url: "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=1200&q=80",
+    alt: "ترحيب بالمستخدمين الجدد",
+  },
+  deposit_received: {
+    url: "https://images.unsplash.com/photo-1523289333742-be147dfb046f?auto=format&fit=crop&w=1200&q=80",
+    alt: "طلب إيداع قيد المراجعة",
+  },
+  deposit_approved: {
+    url: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80",
+    alt: "إضافة رصيد ناجحة",
+  },
+  deposit_rejected: {
+    url: "https://images.unsplash.com/photo-1504712598893-24159a89200e?auto=format&fit=crop&w=1200&q=80",
+    alt: "تنبيه بخصوص الإيداع",
+  },
+  withdraw_received: {
+    url: "https://images.unsplash.com/photo-1521790797524-b2497295b8a0?auto=format&fit=crop&w=1200&q=80",
+    alt: "طلب سحب قيد المتابعة",
+  },
+  withdraw_approved: {
+    url: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80",
+    alt: "تحويل مالي ناجح",
+  },
+  withdraw_rejected: {
+    url: "https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&fit=crop&w=1200&q=80",
+    alt: "تنبيه بخصوص طلب السحب",
+  },
+  doctor_request_approved: {
+    url: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=1200&q=80",
+    alt: "اعتماد طبيب جديد",
+  },
+  doctor_request_rejected: {
+    url: "https://images.unsplash.com/photo-1519494080410-f9aa76cb4283?auto=format&fit=crop&w=1200&q=80",
+    alt: "طلب طبيب يحتاج تحديث",
+  },
+  custom: {
+    url: "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1200&q=80",
+    alt: "رسالة خاصة من منصة Egyptian AI",
+  },
 };
 
 function escapeHtml(value: unknown): string {
@@ -95,7 +153,7 @@ function sanitizeUrl(value?: string | null): string | null {
       return candidate.href;
     }
   } catch (_error) {
-    // ignore
+    // ignore invalid URLs
   }
   return null;
 }
@@ -123,6 +181,14 @@ function sanitizeCustomHtml(html?: string | null): string | null {
   return clean.trim() ? clean : null;
 }
 
+function sanitizeTone(value: unknown, fallback: Tone = "info"): Tone {
+  const tone = optionalString(value)?.toLowerCase();
+  if (tone && ALLOWED_TONES.includes(tone as Tone)) {
+    return tone as Tone;
+  }
+  return fallback;
+}
+
 function sanitizeParagraphs(paragraphs: (string | null | undefined)[] = []): string[] {
   return paragraphs
     .map((paragraph) => optionalString(paragraph))
@@ -133,6 +199,7 @@ function buildTextVersion(content: TemplateContent): string {
   const lines: string[] = [];
   lines.push(content.headline);
   if (content.greeting) lines.push(content.greeting);
+  if (content.heroBadge) lines.push(`مستجد: ${content.heroBadge.label}`);
   if (content.paragraphs?.length) {
     lines.push(...content.paragraphs);
   }
@@ -165,14 +232,38 @@ function buildTextVersion(content: TemplateContent): string {
   return lines.join("\n\n");
 }
 
+function resolveHeroImage(type: string, data: Record<string, any>): { url: string; alt: string } | undefined {
+  const override = sanitizeUrl(data?.hero_image);
+  if (override) {
+    return {
+      url: override,
+      alt: optionalString(data?.hero_alt) || "صورة من بريد Egyptian AI",
+    };
+  }
+  const entry = DEFAULT_HERO_IMAGES[type] || DEFAULT_HERO_IMAGES.default;
+  return entry;
+}
+
 function renderEmail(content: TemplateContent): string {
-  const toneStyle = content.status ? TONE_STYLES[content.status.tone] : TONE_STYLES.default;
+  const toneStyle = TONE_STYLES[content.status?.tone ?? "default"];
   const headerGradient = `linear-gradient(135deg, ${toneStyle.gradient[0]} 0%, ${toneStyle.gradient[1]} 100%)`;
   const currentYear = new Date().getFullYear();
   const preview = escapeHtml(content.preview || content.paragraphs?.[0] || COMPANY_NAME);
 
   const greetingHtml = content.greeting
     ? `<p style="margin:0 0 18px; font-size:16px; color:#1f2937; font-weight:700;">${escapeHtml(content.greeting)}</p>`
+    : "";
+
+  const heroBadgeToneStyle = content.heroBadge ? TONE_STYLES[content.heroBadge.tone] : undefined;
+  const heroBadgeHtml = content.heroBadge
+    ? `<div style="display:inline-block; margin-bottom:14px; padding:7px 18px; border-radius:999px; background:${heroBadgeToneStyle?.pillBg || TONE_STYLES.default.pillBg}; color:${heroBadgeToneStyle?.accent || TONE_STYLES.default.accent}; font-size:12px; font-weight:700;">${escapeHtml(content.heroBadge.label)}</div>`
+    : "";
+
+  const heroSection = content.heroImage || content.heroBadge
+    ? `<div style="margin-bottom:28px; text-align:center;">
+        ${heroBadgeHtml}
+        ${content.heroImage ? `<img src="${escapeHtml(content.heroImage.url)}" alt="${escapeHtml(content.heroImage.alt)}" style="width:100%; max-width:520px; border-radius:22px; display:block; margin:0 auto; box-shadow:0 20px 45px rgba(15, 23, 42, 0.16);" />` : ""}
+      </div>`
     : "";
 
   const paragraphsHtml = content.paragraphs?.length
@@ -274,6 +365,7 @@ function renderEmail(content: TemplateContent): string {
             </tr>
             <tr>
               <td class="content-padding" style="padding:34px 36px 38px;">
+                ${heroSection}
                 ${greetingHtml}
                 ${paragraphsHtml}
                 ${highlightsHtml}
@@ -310,6 +402,7 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
   const customHtml = sanitizeCustomHtml(data?.html || data?.custom_html);
   const customEmoji = optionalString(data?.emoji) || optionalString(data?.icon);
   const footerNote = optionalString(data?.footer_note);
+  const heroImage = resolveHeroImage(type, data);
 
   switch (type) {
     case "welcome": {
@@ -326,10 +419,12 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "ننصحك بإكمال بياناتك الشخصية لتعزيز ثقتك لدى الأطباء وتسهيل التواصل.",
         cta: { label: "بدء استخدام المنصة", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/` },
         secondaryCta: sanitizeUrl(data?.cta_secondary_url) && optionalString(data?.cta_secondary_label)
-          ? { label: data.cta_secondary_label, url: sanitizeUrl(data?.cta_secondary_url)! }
+          ? { label: data.cta_secondary_label!, url: sanitizeUrl(data?.cta_secondary_url)! }
           : undefined,
         customHtml,
         emoji: customEmoji || "✨",
+        heroImage,
+        heroBadge: { label: "حساب جديد", tone: "success" },
       };
     }
     case "deposit_received": {
@@ -352,6 +447,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "يرجى الاحتفاظ بإيصال الدفع لحين تأكيد العملية بالكامل.",
         customHtml,
         emoji: customEmoji || "🧾",
+        heroImage,
+        heroBadge: { label: "بانتظار الاعتماد", tone: "info" },
       };
     }
     case "deposit_approved": {
@@ -376,6 +473,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
           : { label: "عرض المحفظة", url: `${BASE_APP_URL}/wallet` },
         customHtml,
         emoji: customEmoji || "💰",
+        heroImage,
+        heroBadge: { label: amountText ? `+ ${amountText}` : "الرصيد جاهز", tone: "success" },
       };
     }
     case "deposit_rejected": {
@@ -397,6 +496,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "يسعد فريق الدعم بمراجعة أي استفسار لديك حول العملية.",
         customHtml,
         emoji: customEmoji || "⚠️",
+        heroImage,
+        heroBadge: { label: "يلزم المراجعة", tone: "danger" },
       };
     }
     case "withdraw_received": {
@@ -418,6 +519,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "عادة ما تتم الموافقة خلال 24 ساعة عمل كحد أقصى.",
         customHtml,
         emoji: customEmoji || "📩",
+        heroImage,
+        heroBadge: { label: "قيد التنفيذ", tone: "info" },
       };
     }
     case "withdraw_approved": {
@@ -439,6 +542,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "في حال تأخر وصول المبلغ نرجو التواصل معنا فوراً.",
         customHtml,
         emoji: customEmoji || "💸",
+        heroImage,
+        heroBadge: { label: "تم التحويل", tone: "success" },
       };
     }
     case "withdraw_rejected": {
@@ -460,6 +565,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "فريقنا متواجد لمساعدتك في معرفة الخطوات المطلوبة لاستكمال العملية.",
         customHtml,
         emoji: customEmoji || "🚫",
+        heroImage,
+        heroBadge: { label: "لم يتم التحويل", tone: "danger" },
       };
     }
     case "doctor_request_approved": {
@@ -483,6 +590,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         cta: { label: "الدخول إلى لوحة الطبيب", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/doctor-dashboard` },
         customHtml,
         emoji: customEmoji || "🩺",
+        heroImage,
+        heroBadge: { label: "طبيب معتمد", tone: "success" },
       };
     }
     case "doctor_request_rejected": {
@@ -503,6 +612,8 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         footerNote: footerNote || "يسعد فريق الدعم بإرشادك إلى المطلوب لإعادة التقديم بنجاح.",
         customHtml,
         emoji: customEmoji || "📋",
+        heroImage,
+        heroBadge: { label: "تحديث مطلوب", tone: "warning" },
       };
     }
     case "custom": {
@@ -516,6 +627,10 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
       const ctaUrl = sanitizeUrl(data?.cta_url);
       const secondaryLabel = optionalString(data?.cta_secondary_label);
       const secondaryUrl = sanitizeUrl(data?.cta_secondary_url);
+      const statusLabel = optionalString(data?.status_label);
+      const statusTone = statusLabel ? sanitizeTone(data?.status_tone) : undefined;
+      const heroBadgeLabel = optionalString(data?.hero_badge_label);
+      const heroBadgeTone = heroBadgeLabel ? (data?.hero_badge_tone ? (TONE_STYLES[sanitizeTone(data?.hero_badge_tone)] ? sanitizeTone(data?.hero_badge_tone) : "info") : "info") : undefined;
 
       return {
         subject,
@@ -528,6 +643,9 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         secondaryCta: secondaryLabel && secondaryUrl ? { label: secondaryLabel, url: secondaryUrl } : undefined,
         customHtml,
         emoji: customEmoji || "✉️",
+        status: statusLabel && statusTone ? { label: statusLabel, tone: statusTone } : undefined,
+        heroImage,
+        heroBadge: heroBadgeLabel ? { label: heroBadgeLabel, tone: heroBadgeTone || "info" } : undefined,
       };
     }
     default:
