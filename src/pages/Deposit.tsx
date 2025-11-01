@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,7 @@ const Deposit = () => {
       const path = `${user!.id}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from("deposit-proofs").upload(path, proofImage);
       if (uploadError) throw uploadError;
+
       await supabase.from("deposit_requests").insert({
         user_id: user!.id,
         amount: parseFloat(amount),
@@ -79,6 +81,27 @@ const Deposit = () => {
         proof_image_url: path,
         status: "pending",
       });
+
+      if (user?.email) {
+        const parsedAmount = parseFloat(amount);
+        await sendTransactionalEmail({
+          type: "deposit_received",
+          to: user.email,
+          data: {
+            name: user.user_metadata?.full_name || "",
+            amount: parsedAmount,
+            method: paymentMethod,
+            cta_label: "متابعة حالة الطلب",
+            cta_url: `${window.location.origin}/wallet`,
+            hero_badge_label: `${parsedAmount.toLocaleString("ar-EG")} جنيه`,
+            hero_badge_tone: "info",
+            footer_note: "يتم مراجعة طلبات الإيداع خلال 24 ساعة عمل، وسيصلك إشعار فور اعتماد العملية.",
+          },
+        }).catch((emailError) => {
+          console.error("Failed to send deposit received email:", emailError);
+        });
+      }
+
       toast({ title: "تم الإرسال!", description: "تم إرسال طلب الإيداع بنجاح." });
       navigate('/wallet');
     } catch (error: any) {

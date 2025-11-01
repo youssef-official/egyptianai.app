@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -260,10 +261,18 @@ const DoctorDashboard = () => {
       try {
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (prof?.email) {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-            body: JSON.stringify({ type: 'withdraw_received', to: prof.email, data: { name: doctor.doctor_name, amount: netAmount } })
+          await sendTransactionalEmail({
+            type: "withdraw_received",
+            to: prof.email,
+            data: {
+              name: doctor.doctor_name,
+              points: netAmount,
+              cta_label: "متابعة حالة الطلب",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${netAmount.toFixed(0)} نقطة`,
+              hero_badge_tone: "info",
+              footer_note: "سيتم مراجعة طلبك وإبلاغك فور اعتماد التحويل أو الحاجة لأي معلومات إضافية.",
+            },
           });
         }
       } catch (_) {}

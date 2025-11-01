@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,23 @@ const DoctorApplication = () => {
           id_card_front_url: idCardFrontUrl,
           id_card_back_url: idCardBackUrl,
         });
+
+      if (user?.email) {
+        await sendTransactionalEmail({
+          type: "doctor_request_received",
+          to: user.email,
+          data: {
+            name: fullName,
+            specialization,
+            hero_badge_label: "قيد المراجعة",
+            hero_badge_tone: "info",
+            cta_url: `${window.location.origin}/doctor-application`,
+            footer_note: "سنقوم بمراجعة طلبك خلال 24 ساعة عمل، وسنبلغك فوراً عند اتخاذ القرار.",
+          },
+        }).catch((emailError) => {
+          console.error("Failed to send doctor request received email:", emailError);
+        });
+      }
 
       toast({
         title: "تم إرسال الطلب!",

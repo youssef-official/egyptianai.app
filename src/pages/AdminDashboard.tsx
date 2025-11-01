@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,9 +32,11 @@ const AdminDashboard = () => {
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [emailHtml, setEmailHtml] = useState("");
   const [bulkEmailTarget, setBulkEmailTarget] = useState<"all" | "users" | "doctors">("all");
   const [bulkEmailSubject, setBulkEmailSubject] = useState("");
   const [bulkEmailMessage, setBulkEmailMessage] = useState("");
+  const [bulkEmailHtml, setBulkEmailHtml] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -175,11 +178,24 @@ const AdminDashboard = () => {
     // Send email
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (prof?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ type: 'deposit_approved', to: prof.email, data: { name: prof.full_name, amount, notes: adminNotes[requestId] || '' } })
-      }).catch(() => {});
+      try {
+        await sendTransactionalEmail({
+          type: "deposit_approved",
+          to: prof.email,
+          data: {
+            name: prof.full_name,
+            amount,
+            notes: adminNotes[requestId] || "",
+            cta_label: "عرض المحفظة",
+            cta_url: `${window.location.origin}/wallet`,
+            hero_badge_label: `${Number(amount).toLocaleString('ar-EG')} جنيه`,
+            hero_badge_tone: "success",
+            footer_note: "تمت إضافة الرصيد إلى محفظتك ويمكنك استخدامه فوراً داخل المنصة.",
+          },
+        });
+      } catch (error) {
+        console.error("Failed to send deposit approved email:", error);
+      }
     }
 
     toast({ title: "تمت الموافقة!", description: "تم إضافة الرصيد للمستخدم" });
@@ -233,11 +249,24 @@ const AdminDashboard = () => {
     if (dep) {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', dep.user_id).single();
       if (prof?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'deposit_rejected', to: prof.email, data: { name: prof.full_name, amount: dep.amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "deposit_rejected",
+            to: prof.email,
+            data: {
+              name: prof.full_name,
+              amount: dep.amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "إعادة إرسال الطلب",
+              cta_url: `${window.location.origin}/wallet`,
+              hero_badge_label: `${Number(dep.amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "danger",
+              footer_note: "يرجى مراجعة ملاحظات الفريق وإعادة تقديم الطلب بعد تصحيح البيانات.",
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send deposit rejected email:", error);
+        }
       }
     }
 
@@ -275,11 +304,24 @@ const AdminDashboard = () => {
     if (req) {
       const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id || doctorUserId).single();
       if (doctorProfile?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'withdraw_approved', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "withdraw_approved",
+            to: doctorProfile.email,
+            data: {
+              name: req.doctors?.doctor_name || "",
+              amount: req.net_amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "عرض محفظتي",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${Number(req.net_amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "success",
+              footer_note: "سيتم تحويل المبلغ إلى حسابك خلال الفترة المحددة من قبل فريق المالية.",
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send withdraw approved email:", error);
+        }
       }
     }
 
@@ -302,11 +344,24 @@ const AdminDashboard = () => {
     if (req) {
       const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id).single();
       if (doctorProfile?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'withdraw_rejected', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "withdraw_rejected",
+            to: doctorProfile.email,
+            data: {
+              name: req.doctors?.doctor_name || "",
+              amount: req.net_amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "مراجعة رصيدي",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${Number(req.net_amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "danger",
+              footer_note: "يمكنك إعادة تقديم طلب السحب بعد معالجة الملاحظات الموضحة في الرسالة.",
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send withdraw rejected email:", error);
+        }
       }
     }
 
@@ -385,18 +440,23 @@ const AdminDashboard = () => {
     // Send email (doctor request approved)
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
     if (prof?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          type: 'doctor_request_approved',
+      try {
+        await sendTransactionalEmail({
+          type: "doctor_request_approved",
           to: prof.email,
-          data: { name: req.full_name }
-        })
-      }).catch(() => {});
+          data: {
+            name: req.full_name,
+            specialization: req.specialization,
+            cta_label: "الدخول إلى لوحة الطبيب",
+            cta_url: `${window.location.origin}/doctor-dashboard`,
+            hero_badge_label: "طبيب معتمد",
+            hero_badge_tone: "success",
+            footer_note: "يمكنك الآن إكمال ملفك الطبي وتفعيل مواعيد الاستشارات لاستقبال المرضى.",
+          },
+        });
+      } catch (error) {
+        console.error("Failed to send doctor approval email:", error);
+      }
     }
 
     toast({ title: 'تم القبول', description: 'تم قبول طلب الطبيب' });
@@ -415,18 +475,21 @@ const AdminDashboard = () => {
 
     const { data: prof2 } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
     if (prof2?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          type: 'doctor_request_rejected',
+      try {
+        await sendTransactionalEmail({
+          type: "doctor_request_rejected",
           to: prof2.email,
-          data: { name: req.full_name, amount: '', notes: adminNotes[req.id] || '' }
-        })
-      }).catch(() => {});
+          data: {
+            name: req.full_name,
+            notes: adminNotes[req.id] || "",
+            hero_badge_label: "قيد المراجعة",
+            hero_badge_tone: "warning",
+            footer_note: "يمكنك إعادة تقديم الطلب بعد استكمال الملاحظات الموضحة بواسطة فريق الاعتماد.",
+          },
+        });
+      } catch (error) {
+        console.error("Failed to send doctor rejection email:", error);
+      }
     }
 
     toast({ title: 'تم الرفض', description: 'تم رفض طلب الطبيب' });
@@ -503,35 +566,36 @@ const AdminDashboard = () => {
   };
 
   const sendCustomEmail = async () => {
-    if (!emailRecipient || !emailSubject || !emailMessage) {
+    const hasMessage = emailMessage.trim().length > 0;
+    const hasHtml = emailHtml.trim().length > 0;
+
+    if (!emailRecipient || !emailSubject || (!hasMessage && !hasHtml)) {
       toast({
         title: "خطأ",
-        description: "الرجاء ملء جميع الحقول",
+        description: "الرجاء إدخال البريد والمستلم مع نص أو محتوى HTML",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+      const payload: any = {
+        type: "custom",
+        to: emailRecipient,
+        data: {
+          subject: emailSubject,
         },
-        body: JSON.stringify({
-          type: 'custom',
-          to: emailRecipient,
-          data: {
-            subject: emailSubject,
-            message: emailMessage
-          }
-        })
-      });
+      };
 
-      if (!response.ok) {
-        throw new Error('فشل إرسال الإيميل');
+      if (hasMessage) {
+        payload.data.message = emailMessage;
       }
+
+      if (hasHtml) {
+        payload.data.html = emailHtml;
+      }
+
+      await sendTransactionalEmail(payload);
 
       toast({
         title: "تم الإرسال!",
@@ -542,6 +606,7 @@ const AdminDashboard = () => {
       setEmailRecipient("");
       setEmailSubject("");
       setEmailMessage("");
+      setEmailHtml("");
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -552,10 +617,13 @@ const AdminDashboard = () => {
   };
 
   const sendBulkEmail = async () => {
-    if (!bulkEmailSubject || !bulkEmailMessage) {
+    const hasMessage = bulkEmailMessage.trim().length > 0;
+    const hasHtml = bulkEmailHtml.trim().length > 0;
+
+    if (!bulkEmailSubject || (!hasMessage && !hasHtml)) {
       toast({
         title: "خطأ",
-        description: "الرجاء ملء جميع الحقول",
+        description: "الرجاء إدخال موضوع وإما نص أو محتوى HTML",
         variant: "destructive",
       });
       return;
@@ -602,27 +670,24 @@ const AdminDashboard = () => {
 
       for (const profile of validProfiles) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          const payload: any = {
+            type: "custom",
+            to: profile.email,
+            data: {
+              subject: bulkEmailSubject,
             },
-            body: JSON.stringify({
-              type: 'custom',
-              to: profile.email,
-              data: {
-                subject: bulkEmailSubject,
-                message: bulkEmailMessage
-              }
-            })
-          });
+          };
 
-          if (response.ok) {
-            successCount++;
-          } else {
-            failCount++;
+          if (hasMessage) {
+            payload.data.message = bulkEmailMessage;
           }
+
+          if (hasHtml) {
+            payload.data.html = bulkEmailHtml;
+          }
+
+          await sendTransactionalEmail(payload);
+          successCount++;
         } catch {
           failCount++;
         }
@@ -639,6 +704,7 @@ const AdminDashboard = () => {
       // Reset form
       setBulkEmailSubject("");
       setBulkEmailMessage("");
+      setBulkEmailHtml("");
     } catch (error: any) {
       toast({
         title: "خطأ",
@@ -1392,6 +1458,22 @@ const AdminDashboard = () => {
                     rows={8}
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center justify-between">
+                    محتوى HTML (اختياري)
+                    <span className="text-xs text-muted-foreground">ألصق كود HTML وسيتم دمجه مع القالب</span>
+                  </label>
+                  <Textarea
+                    value={emailHtml}
+                    onChange={(e) => setEmailHtml(e.target.value)}
+                    placeholder="<section>...</section>"
+                    className="rounded-2xl min-h-[160px] font-mono text-xs"
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    يتم تنظيف الكود تلقائياً (إزالة السكربتات) مع الحفاظ على الهوية البصرية للبريد.
+                  </p>
+                </div>
                 <Button 
                   onClick={sendCustomEmail}
                   className="w-full rounded-full"
@@ -1440,6 +1522,22 @@ const AdminDashboard = () => {
                     className="rounded-2xl min-h-[200px]"
                     rows={8}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center justify-between">
+                    محتوى HTML (اختياري)
+                    <span className="text-xs text-muted-foreground">سيتم إرساله لجميع المستهدفين</span>
+                  </label>
+                  <Textarea
+                    value={bulkEmailHtml}
+                    onChange={(e) => setBulkEmailHtml(e.target.value)}
+                    placeholder="<table>...</table>"
+                    className="rounded-2xl min-h-[160px] font-mono text-xs"
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    تحذير: لا تستخدم سكربتات أو روابط غير آمنة، وسيتم تنظيف الكود قبل الإرسال.
+                  </p>
                 </div>
                 <Button 
                   onClick={sendBulkEmail}
