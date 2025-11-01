@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -175,11 +176,15 @@ const AdminDashboard = () => {
     // Send email
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (prof?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ type: 'deposit_approved', to: prof.email, data: { name: prof.full_name, amount, notes: adminNotes[requestId] || '' } })
-      }).catch(() => {});
+      try {
+        await sendTransactionalEmail({
+          type: "deposit_approved",
+          to: prof.email,
+          data: { name: prof.full_name, amount, notes: adminNotes[requestId] || "" },
+        });
+      } catch (error) {
+        console.error("Failed to send deposit approved email:", error);
+      }
     }
 
     toast({ title: "تمت الموافقة!", description: "تم إضافة الرصيد للمستخدم" });
@@ -233,11 +238,15 @@ const AdminDashboard = () => {
     if (dep) {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', dep.user_id).single();
       if (prof?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'deposit_rejected', to: prof.email, data: { name: prof.full_name, amount: dep.amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "deposit_rejected",
+            to: prof.email,
+            data: { name: prof.full_name, amount: dep.amount, notes: adminNotes[requestId] || "" },
+          });
+        } catch (error) {
+          console.error("Failed to send deposit rejected email:", error);
+        }
       }
     }
 
@@ -275,11 +284,15 @@ const AdminDashboard = () => {
     if (req) {
       const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id || doctorUserId).single();
       if (doctorProfile?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'withdraw_approved', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "withdraw_approved",
+            to: doctorProfile.email,
+            data: { name: req.doctors?.doctor_name || "", amount: req.net_amount, notes: adminNotes[requestId] || "" },
+          });
+        } catch (error) {
+          console.error("Failed to send withdraw approved email:", error);
+        }
       }
     }
 
@@ -302,11 +315,15 @@ const AdminDashboard = () => {
     if (req) {
       const { data: doctorProfile } = await supabase.from('profiles').select('*').eq('id', req.doctors?.user_id).single();
       if (doctorProfile?.email) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ type: 'withdraw_rejected', to: doctorProfile.email, data: { name: req.doctors?.doctor_name || '', amount: req.net_amount, notes: adminNotes[requestId] || '' } })
-        }).catch(() => {});
+        try {
+          await sendTransactionalEmail({
+            type: "withdraw_rejected",
+            to: doctorProfile.email,
+            data: { name: req.doctors?.doctor_name || "", amount: req.net_amount, notes: adminNotes[requestId] || "" },
+          });
+        } catch (error) {
+          console.error("Failed to send withdraw rejected email:", error);
+        }
       }
     }
 
@@ -385,18 +402,15 @@ const AdminDashboard = () => {
     // Send email (doctor request approved)
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
     if (prof?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          type: 'doctor_request_approved',
+      try {
+        await sendTransactionalEmail({
+          type: "doctor_request_approved",
           to: prof.email,
-          data: { name: req.full_name }
-        })
-      }).catch(() => {});
+          data: { name: req.full_name },
+        });
+      } catch (error) {
+        console.error("Failed to send doctor approval email:", error);
+      }
     }
 
     toast({ title: 'تم القبول', description: 'تم قبول طلب الطبيب' });
@@ -415,18 +429,15 @@ const AdminDashboard = () => {
 
     const { data: prof2 } = await supabase.from('profiles').select('*').eq('id', req.user_id).single();
     if (prof2?.email) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          type: 'doctor_request_rejected',
+      try {
+        await sendTransactionalEmail({
+          type: "doctor_request_rejected",
           to: prof2.email,
-          data: { name: req.full_name, amount: '', notes: adminNotes[req.id] || '' }
-        })
-      }).catch(() => {});
+          data: { name: req.full_name, notes: adminNotes[req.id] || "" },
+        });
+      } catch (error) {
+        console.error("Failed to send doctor rejection email:", error);
+      }
     }
 
     toast({ title: 'تم الرفض', description: 'تم رفض طلب الطبيب' });
@@ -513,25 +524,14 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+      await sendTransactionalEmail({
+        type: "custom",
+        to: emailRecipient,
+        data: {
+          subject: emailSubject,
+          message: emailMessage,
         },
-        body: JSON.stringify({
-          type: 'custom',
-          to: emailRecipient,
-          data: {
-            subject: emailSubject,
-            message: emailMessage
-          }
-        })
       });
-
-      if (!response.ok) {
-        throw new Error('فشل إرسال الإيميل');
-      }
 
       toast({
         title: "تم الإرسال!",
@@ -602,27 +602,15 @@ const AdminDashboard = () => {
 
       for (const profile of validProfiles) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          await sendTransactionalEmail({
+            type: "custom",
+            to: profile.email,
+            data: {
+              subject: bulkEmailSubject,
+              message: bulkEmailMessage,
             },
-            body: JSON.stringify({
-              type: 'custom',
-              to: profile.email,
-              data: {
-                subject: bulkEmailSubject,
-                message: bulkEmailMessage
-              }
-            })
           });
-
-          if (response.ok) {
-            successCount++;
-          } else {
-            failCount++;
-          }
+          successCount++;
         } catch {
           failCount++;
         }

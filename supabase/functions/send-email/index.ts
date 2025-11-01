@@ -17,6 +17,17 @@ serve(async (req) => {
   try {
     const { type, to, data } = await req.json();
 
+    if (!RESEND_API_KEY) {
+      throw new Error('Missing RESEND_API_KEY secret. قم بإضافة المفتاح في Supabase.');
+    }
+
+    if (!type || !to) {
+      return new Response(JSON.stringify({ error: 'نوع البريد أو البريد المستلم غير موجود' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     let subject = '';
     let html = '';
 
@@ -372,6 +383,13 @@ serve(async (req) => {
         </body>
         </html>
       `;
+    }
+
+    if (!subject) {
+      return new Response(JSON.stringify({ error: 'نوع البريد غير مدعوم' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const response = await fetch('https://api.resend.com/emails', {

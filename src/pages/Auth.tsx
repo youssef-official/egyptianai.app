@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,22 +77,15 @@ const Auth = () => {
         // Send welcome email
         if (data.user) {
           try {
-            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            await sendTransactionalEmail({
+              type: "welcome",
+              to: email,
+              data: {
+                name: fullName,
               },
-              body: JSON.stringify({
-                type: 'welcome',
-                to: email,
-                data: {
-                  name: fullName
-                }
-              })
             });
           } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
+            console.error("Failed to send welcome email:", emailError);
           }
         }
 
