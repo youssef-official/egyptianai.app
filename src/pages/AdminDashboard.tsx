@@ -27,6 +27,9 @@ const AdminDashboard = () => {
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
   const [searchKind, setSearchKind] = useState<"transaction" | "deposit" | "withdraw" | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -495,6 +498,55 @@ const AdminDashboard = () => {
     toast({ title: "غير موجود", description: "لم يتم العثور على العملية", variant: "destructive" });
   };
 
+  const sendCustomEmail = async () => {
+    if (!emailRecipient || !emailSubject || !emailMessage) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء ملء جميع الحقول",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
+        body: JSON.stringify({
+          type: 'custom',
+          to: emailRecipient,
+          data: {
+            subject: emailSubject,
+            message: emailMessage
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('فشل إرسال الإيميل');
+      }
+
+      toast({
+        title: "تم الإرسال!",
+        description: "تم إرسال الإيميل بنجاح",
+      });
+
+      // Reset form
+      setEmailRecipient("");
+      setEmailSubject("");
+      setEmailMessage("");
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ أثناء إرسال الإيميل",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-primary/10 pb-24">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -696,7 +748,7 @@ const AdminDashboard = () => {
         </Card>
 
         <Tabs defaultValue="deposits" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             <TabsTrigger value="deposits">الإيداع</TabsTrigger>
             <TabsTrigger value="withdrawals">السحب</TabsTrigger>
             <TabsTrigger value="doctor-requests">طلبات الأطباء</TabsTrigger>
@@ -704,6 +756,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="doctors">الأطباء</TabsTrigger>
             <TabsTrigger value="users">المستخدمين</TabsTrigger>
             <TabsTrigger value="reports">التبليغات</TabsTrigger>
+            <TabsTrigger value="emails">إرسال إيميل</TabsTrigger>
           </TabsList>
           <TabsContent value="doctor-requests" className="space-y-4">
             {doctorRequests.map((req) => (
@@ -1197,6 +1250,54 @@ const AdminDashboard = () => {
                 {/* Fetch reports inline to keep component simple */}
                 {/* In a real app you'd lift state, but this is fine here */}
                 <ReportsList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="emails" className="space-y-4">
+            <Card className="rounded-3xl border-0 shadow-medium">
+              <CardHeader>
+                <CardTitle>إرسال إيميل مخصص</CardTitle>
+                <CardDescription>أرسل إيميل إلى أي مستخدم على المنصة</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">البريد الإلكتروني للمستلم</label>
+                  <Input
+                    type="email"
+                    value={emailRecipient}
+                    onChange={(e) => setEmailRecipient(e.target.value)}
+                    placeholder="example@email.com"
+                    className="rounded-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">الموضوع</label>
+                  <Input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder="موضوع الإيميل"
+                    className="rounded-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">الرسالة</label>
+                  <Textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    placeholder="اكتب رسالتك هنا..."
+                    className="rounded-2xl min-h-[200px]"
+                    rows={8}
+                  />
+                </div>
+                <Button 
+                  onClick={sendCustomEmail}
+                  className="w-full rounded-full"
+                  size="lg"
+                >
+                  إرسال الإيميل
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

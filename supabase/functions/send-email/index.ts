@@ -340,6 +340,38 @@ serve(async (req) => {
         </body>
         </html>
       `;
+    } else if (type === 'custom') {
+      subject = data.subject || 'رسالة من منصة الاستشارات الطبية';
+      html = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); padding: 30px; text-align: center; }
+            .header img { max-width: 80px; margin-bottom: 15px; }
+            .header h1 { color: white; margin: 0; font-size: 24px; }
+            .content { padding: 30px; line-height: 1.8; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" />
+              <h1>${data.subject || 'رسالة من المنصة'}</h1>
+            </div>
+            <div class="content">
+              ${data.message ? data.message.replace(/\n/g, '<br>') : ''}
+            </div>
+            <div class="footer">
+              <p>© 2025 منصة الاستشارات الطبية</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
     }
 
     const response = await fetch('https://api.resend.com/emails', {

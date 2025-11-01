@@ -103,6 +103,45 @@ export type Database = {
           },
         ]
       }
+      doctor_reports: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          id: string
+          message: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          id?: string
+          message: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          message?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_reports_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_requests: {
         Row: {
           admin_notes: string | null
@@ -257,9 +296,9 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string
           id: string
-          email: string | null
           phone: string
           referral_source: string | null
           updated_at: string
@@ -268,9 +307,9 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
-          email?: string | null
           phone: string
           referral_source?: string | null
           updated_at?: string
@@ -279,9 +318,9 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
-          email?: string | null
           phone?: string
           referral_source?: string | null
           updated_at?: string
@@ -447,8 +486,18 @@ export type Database = {
     }
     Functions: {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
-      perform_consultation: { Args: { _doctor_id: string }; Returns: { tx_id: string }[] }
-      perform_transfer: { Args: { _receiver_id: string; _amount: number }; Returns: { tx_id: string }[] }
+      perform_consultation: {
+        Args: { _doctor_id: string }
+        Returns: {
+          tx_id: string
+        }[]
+      }
+      perform_transfer: {
+        Args: { _amount: number; _receiver_id: string }
+        Returns: {
+          tx_id: string
+        }[]
+      }
     }
     Enums: {
       request_status: "pending" | "approved" | "rejected"

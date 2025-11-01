@@ -201,9 +201,9 @@ const DoctorDashboard = () => {
         .eq("id", tx.user_id)
         .single();
       
-      tx.sender = profile || null;
+      const enrichedTx: any = { ...tx, sender: profile || null };
       setSearchKind("transaction");
-      setSearchResult(tx);
+      setSearchResult(enrichedTx);
       toast({ title: "تم العثور!", description: "تم العثور على العملية" });
       return;
     }
