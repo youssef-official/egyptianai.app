@@ -9,8 +9,11 @@ type EmailPayload = {
     | "withdraw_received"
     | "withdraw_approved"
     | "withdraw_rejected"
+    | "doctor_request_received"
     | "doctor_request_approved"
     | "doctor_request_rejected"
+    | "transfer_sent"
+    | "transfer_received"
     | "custom";
   to: string;
   data: Record<string, unknown>;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,8 +71,43 @@ const Transfer = () => {
     setLoading(true);
 
     try {
-      // Resolve receiver as exact user_id only for now
-      const receiverUserId = receiverId;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
+
+      const trimmedInput = receiverId.trim();
+      let receiverProfile: { id: string; full_name?: string | null; email?: string | null } | null = null;
+
+      if (trimmedInput.includes("@")) {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .ilike("email", trimmedInput)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+        if (!profile) throw new Error("لا يوجد مستخدم بهذا البريد الإلكتروني");
+        receiverProfile = profile;
+      } else {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", trimmedInput)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+        if (!profile) throw new Error("لا يوجد مستخدم بهذا المعرف");
+        receiverProfile = profile;
+      }
+
+      if (!receiverProfile) {
+        throw new Error('تعذر تحديد المستخدم المستقبل');
+      }
+
+      const receiverUserId = receiverProfile.id;
+
+      if (user.id === receiverUserId) throw new Error('لا يمكنك التحويل لنفسك');
 
       const { data: receiverWallet } = await supabase
         .from('wallets')
@@ -79,15 +115,65 @@ const Transfer = () => {
         .eq('user_id', receiverUserId)
         .maybeSingle();
 
-      if (!receiverWallet) throw new Error('المستخدم المستقبل غير موجود');
+      if (!receiverWallet) throw new Error('محفظة المستقبل غير موجودة');
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user!.id === receiverUserId) throw new Error('لا يمكنك التحويل لنفسك');
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('id', user.id)
+        .maybeSingle();
 
       // Perform transfer via RPC to be atomic and generate ID
       const { data: rpcData, error } = await supabase.rpc('perform_transfer', { _receiver_id: receiverUserId, _amount: transferAmount });
       if (error) throw error;
       const transactionId = rpcData?.[0]?.tx_id || '';
+
+      const notifications: Promise<unknown>[] = [];
+      const walletUrl = `${window.location.origin}/wallet`;
+
+      if (senderProfile?.email) {
+        notifications.push(
+          sendTransactionalEmail({
+            type: "transfer_sent",
+            to: senderProfile.email,
+            data: {
+              name: senderProfile.full_name || "",
+              points: transferAmount,
+              receiver_name: receiverProfile.full_name || receiverProfile.email || trimmedInput,
+              receiver_email: receiverProfile.email || undefined,
+              transaction_id: transactionId,
+              cta_url: walletUrl,
+              hero_badge_label: `${transferAmount.toLocaleString('ar-EG')} نقطة`,
+              hero_badge_tone: "warning",
+              footer_note: "إذا لم تكن أنت من أجريت هذه العملية يرجى التواصل مع فريق الدعم فوراً.",
+            },
+          }).catch((emailError) => console.error("Failed to send transfer sent email:", emailError))
+        );
+      }
+
+      if (receiverProfile?.email) {
+        notifications.push(
+          sendTransactionalEmail({
+            type: "transfer_received",
+            to: receiverProfile.email,
+            data: {
+              name: receiverProfile.full_name || "",
+              points: transferAmount,
+              sender_name: senderProfile?.full_name || senderProfile?.email || "مستخدم من المنصة",
+              sender_email: senderProfile?.email || undefined,
+              transaction_id: transactionId,
+              cta_url: walletUrl,
+              hero_badge_label: `${transferAmount.toLocaleString('ar-EG')} نقطة`,
+              hero_badge_tone: "success",
+              footer_note: "يمكنك استخدام رصيدك الجديد فوراً داخل المنصة.",
+            },
+          }).catch((emailError) => console.error("Failed to send transfer received email:", emailError))
+        );
+      }
+
+      if (notifications.length) {
+        await Promise.allSettled(notifications);
+      }
 
       toast({
         title: t('common.transfer'),
@@ -132,18 +218,18 @@ const Transfer = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleTransfer} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="receiverId">User ID</Label>
+                <Label htmlFor="receiverId">User ID أو البريد الإلكتروني</Label>
                 <Input
                   id="receiverId"
                   type="text"
                   value={receiverId}
                   onChange={(e) => setReceiverId(e.target.value)}
-                  placeholder="أدخل User ID للمستخدم..."
+                  placeholder="أدخل User ID أو البريد الإلكتروني للمستخدم..."
                   required
                   className="text-right"
                 />
                 <p className="text-xs text-muted-foreground">
-                  ملاحظة: حالياً نقبل User ID فقط لضمان الدقة
+                  ملاحظة: يمكنك إدخال معرف المستخدم أو البريد الإلكتروني، وسنحدد الحساب تلقائياً.
                 </p>
               </div>
 

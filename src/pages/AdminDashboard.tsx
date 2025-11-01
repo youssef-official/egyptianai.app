@@ -182,7 +182,16 @@ const AdminDashboard = () => {
         await sendTransactionalEmail({
           type: "deposit_approved",
           to: prof.email,
-          data: { name: prof.full_name, amount, notes: adminNotes[requestId] || "" },
+          data: {
+            name: prof.full_name,
+            amount,
+            notes: adminNotes[requestId] || "",
+            cta_label: "عرض المحفظة",
+            cta_url: `${window.location.origin}/wallet`,
+            hero_badge_label: `${Number(amount).toLocaleString('ar-EG')} جنيه`,
+            hero_badge_tone: "success",
+            footer_note: "تمت إضافة الرصيد إلى محفظتك ويمكنك استخدامه فوراً داخل المنصة.",
+          },
         });
       } catch (error) {
         console.error("Failed to send deposit approved email:", error);
@@ -244,7 +253,16 @@ const AdminDashboard = () => {
           await sendTransactionalEmail({
             type: "deposit_rejected",
             to: prof.email,
-            data: { name: prof.full_name, amount: dep.amount, notes: adminNotes[requestId] || "" },
+            data: {
+              name: prof.full_name,
+              amount: dep.amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "إعادة إرسال الطلب",
+              cta_url: `${window.location.origin}/wallet`,
+              hero_badge_label: `${Number(dep.amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "danger",
+              footer_note: "يرجى مراجعة ملاحظات الفريق وإعادة تقديم الطلب بعد تصحيح البيانات.",
+            },
           });
         } catch (error) {
           console.error("Failed to send deposit rejected email:", error);
@@ -290,7 +308,16 @@ const AdminDashboard = () => {
           await sendTransactionalEmail({
             type: "withdraw_approved",
             to: doctorProfile.email,
-            data: { name: req.doctors?.doctor_name || "", amount: req.net_amount, notes: adminNotes[requestId] || "" },
+            data: {
+              name: req.doctors?.doctor_name || "",
+              amount: req.net_amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "عرض محفظتي",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${Number(req.net_amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "success",
+              footer_note: "سيتم تحويل المبلغ إلى حسابك خلال الفترة المحددة من قبل فريق المالية.",
+            },
           });
         } catch (error) {
           console.error("Failed to send withdraw approved email:", error);
@@ -321,7 +348,16 @@ const AdminDashboard = () => {
           await sendTransactionalEmail({
             type: "withdraw_rejected",
             to: doctorProfile.email,
-            data: { name: req.doctors?.doctor_name || "", amount: req.net_amount, notes: adminNotes[requestId] || "" },
+            data: {
+              name: req.doctors?.doctor_name || "",
+              amount: req.net_amount,
+              notes: adminNotes[requestId] || "",
+              cta_label: "مراجعة رصيدي",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${Number(req.net_amount).toLocaleString('ar-EG')} جنيه`,
+              hero_badge_tone: "danger",
+              footer_note: "يمكنك إعادة تقديم طلب السحب بعد معالجة الملاحظات الموضحة في الرسالة.",
+            },
           });
         } catch (error) {
           console.error("Failed to send withdraw rejected email:", error);
@@ -408,7 +444,15 @@ const AdminDashboard = () => {
         await sendTransactionalEmail({
           type: "doctor_request_approved",
           to: prof.email,
-          data: { name: req.full_name },
+          data: {
+            name: req.full_name,
+            specialization: req.specialization,
+            cta_label: "الدخول إلى لوحة الطبيب",
+            cta_url: `${window.location.origin}/doctor-dashboard`,
+            hero_badge_label: "طبيب معتمد",
+            hero_badge_tone: "success",
+            footer_note: "يمكنك الآن إكمال ملفك الطبي وتفعيل مواعيد الاستشارات لاستقبال المرضى.",
+          },
         });
       } catch (error) {
         console.error("Failed to send doctor approval email:", error);
@@ -435,7 +479,13 @@ const AdminDashboard = () => {
         await sendTransactionalEmail({
           type: "doctor_request_rejected",
           to: prof2.email,
-          data: { name: req.full_name, notes: adminNotes[req.id] || "" },
+          data: {
+            name: req.full_name,
+            notes: adminNotes[req.id] || "",
+            hero_badge_label: "قيد المراجعة",
+            hero_badge_tone: "warning",
+            footer_note: "يمكنك إعادة تقديم الطلب بعد استكمال الملاحظات الموضحة بواسطة فريق الاعتماد.",
+          },
         });
       } catch (error) {
         console.error("Failed to send doctor rejection email:", error);

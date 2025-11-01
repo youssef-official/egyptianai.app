@@ -264,7 +264,15 @@ const DoctorDashboard = () => {
           await sendTransactionalEmail({
             type: "withdraw_received",
             to: prof.email,
-            data: { name: doctor.doctor_name, amount: netAmount },
+            data: {
+              name: doctor.doctor_name,
+              points: netAmount,
+              cta_label: "متابعة حالة الطلب",
+              cta_url: `${window.location.origin}/doctor-dashboard`,
+              hero_badge_label: `${netAmount.toFixed(0)} نقطة`,
+              hero_badge_tone: "info",
+              footer_note: "سيتم مراجعة طلبك وإبلاغك فور اعتماد التحويل أو الحاجة لأي معلومات إضافية.",
+            },
           });
         }
       } catch (_) {}

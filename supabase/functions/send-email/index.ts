@@ -105,6 +105,18 @@ const DEFAULT_HERO_IMAGES: Record<string, { url: string; alt: string }> = {
     url: "https://images.unsplash.com/photo-1519494080410-f9aa76cb4283?auto=format&fit=crop&w=1200&q=80",
     alt: "طلب طبيب يحتاج تحديث",
   },
+  doctor_request_received: {
+    url: "https://images.unsplash.com/photo-1550831107-1553da8c8464?auto=format&fit=crop&w=1200&q=80",
+    alt: "تم استلام طلبك كطبيب",
+  },
+  transfer_sent: {
+    url: "https://images.unsplash.com/photo-1454165205744-3b78555e5572?auto=format&fit=crop&w=1200&q=80",
+    alt: "تحويل صادر من محفظتك",
+  },
+  transfer_received: {
+    url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+    alt: "رصيد جديد في محفظتك",
+  },
   custom: {
     url: "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1200&q=80",
     alt: "رسالة خاصة من منصة Egyptian AI",
@@ -569,6 +581,31 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         heroBadge: { label: "لم يتم التحويل", tone: "danger" },
       };
     }
+    case "doctor_request_received": {
+      const specialization = optionalString(data?.specialization) || optionalString(data?.specialization_ar);
+
+      const highlights: Highlight[] = [];
+      if (specialization) highlights.push({ label: "التخصص", value: specialization });
+
+      return {
+        subject: "تم استلام طلبك كطبيب",
+        preview: "طلبك قيد المراجعة وسنتواصل معك قريباً.",
+        headline: "طلبك تحت المراجعة",
+        greeting: name ? `د/ ${name}` : friendlyGreeting,
+        paragraphs: sanitizeParagraphs([
+          "وصلنا طلبك للانضمام كطبيب، وبدأ الفريق في مراجعته فوراً.",
+          "سنتواصل معك خلال مدة قصيرة في حال احتجنا أي مستندات إضافية أو بعد اعتماد الطلب.",
+        ]),
+        highlights,
+        status: { label: "قيد المراجعة", tone: "info" },
+        footerNote: footerNote || "يمكنك متابعة حالة الطلب من خلال لوحة التحكم الخاصة بك في أي وقت.",
+        customHtml,
+        emoji: customEmoji || "📝",
+        heroImage,
+        heroBadge: { label: "قيد المراجعة", tone: "info" },
+        cta: { label: "متابعة حالة الطلب", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/doctor-application` },
+      };
+    }
     case "doctor_request_approved": {
       const specialization = optionalString(data?.specialization) || optionalString(data?.specialization_ar);
       const highlights: Highlight[] = [];
@@ -614,6 +651,74 @@ function createTemplate(type: string, data: Record<string, any>): TemplateConten
         emoji: customEmoji || "📋",
         heroImage,
         heroBadge: { label: "تحديث مطلوب", tone: "warning" },
+      };
+    }
+    case "transfer_sent": {
+      const pointsValue = Number(data?.points ?? data?.amount);
+      const pointsText = Number.isFinite(pointsValue) ? `${pointsValue.toLocaleString("ar-EG")} نقطة` : optionalString(data?.amount_text);
+      const receiverName = optionalString(data?.receiver_name) || optionalString(data?.receiver_full_name) || optionalString(data?.receiver_username);
+      const receiverEmail = optionalString(data?.receiver_email);
+      const transactionId = optionalString(data?.transaction_id) || optionalString(data?.tx_id);
+
+      const highlights: Highlight[] = [];
+      if (pointsText) highlights.push({ label: "المبلغ المحوّل", value: pointsText });
+      if (receiverName) highlights.push({ label: "المستلم", value: receiverName });
+      if (receiverEmail) highlights.push({ label: "بريد المستلم", value: receiverEmail });
+      if (transactionId) highlights.push({ label: "رقم العملية", value: transactionId });
+
+      return {
+        subject: "تم خصم رصيد من محفظتك",
+        preview: pointsText ? `تم تحويل ${pointsText}${receiverName ? ` إلى ${receiverName}` : ""}.` : "تم تنفيذ تحويل من محفظتك.",
+        headline: "تم تنفيذ عملية التحويل",
+        greeting: friendlyGreeting,
+        paragraphs: sanitizeParagraphs([
+          receiverName
+            ? `تم تحويل ${pointsText || "المبلغ المطلوب"} إلى ${receiverName}.`
+            : `تم تحويل ${pointsText || "المبلغ المطلوب"} بنجاح من محفظتك.`,
+          "يمكنك الرجوع إلى سجل العمليات داخل محفظتك في أي وقت.",
+        ]),
+        highlights,
+        status: { label: "تم الخصم", tone: "warning" },
+        footerNote: footerNote || "إذا لم تكن أنت من أجرى هذه العملية، يرجى التواصل مع الدعم فوراً.",
+        cta: { label: "عرض محفظتي", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/wallet` },
+        customHtml,
+        emoji: customEmoji || "↗️",
+        heroImage,
+        heroBadge: { label: pointsText ? `-${pointsText}` : "تحويل صادر", tone: "warning" },
+      };
+    }
+    case "transfer_received": {
+      const pointsValue = Number(data?.points ?? data?.amount);
+      const pointsText = Number.isFinite(pointsValue) ? `${pointsValue.toLocaleString("ar-EG")} نقطة` : optionalString(data?.amount_text);
+      const senderName = optionalString(data?.sender_name) || optionalString(data?.sender_full_name) || optionalString(data?.sender_username);
+      const senderEmail = optionalString(data?.sender_email);
+      const transactionId = optionalString(data?.transaction_id) || optionalString(data?.tx_id);
+
+      const highlights: Highlight[] = [];
+      if (pointsText) highlights.push({ label: "المبلغ المضاف", value: pointsText });
+      if (senderName) highlights.push({ label: "من", value: senderName });
+      if (senderEmail) highlights.push({ label: "بريد المرسل", value: senderEmail });
+      if (transactionId) highlights.push({ label: "رقم العملية", value: transactionId });
+
+      return {
+        subject: "تم إضافة رصيد إلى محفظتك",
+        preview: pointsText ? `استلمت ${pointsText}${senderName ? ` من ${senderName}` : ""}.` : "استلمت رصيداً جديداً في محفظتك.",
+        headline: "رصيد جديد في محفظتك",
+        greeting: friendlyGreeting,
+        paragraphs: sanitizeParagraphs([
+          senderName
+            ? `تم إضافة ${pointsText || "المبلغ"} إلى محفظتك من ${senderName}.`
+            : `تم إضافة ${pointsText || "المبلغ"} إلى محفظتك بنجاح.`,
+          "يمكنك الآن استخدام الرصيد الجديد في أي من خدمات المنصة.",
+        ]),
+        highlights,
+        status: { label: "تم الإيداع", tone: "success" },
+        footerNote: footerNote || "استمتع بخدمات المنصة، ولا تتردد في التواصل معنا عند الحاجة.",
+        cta: { label: "عرض محفظتي", url: sanitizeUrl(data?.cta_url) || `${BASE_APP_URL}/wallet` },
+        customHtml,
+        emoji: customEmoji || "💎",
+        heroImage,
+        heroBadge: { label: pointsText ? `+ ${pointsText}` : "رصيد مضاف", tone: "success" },
       };
     }
     case "custom": {
