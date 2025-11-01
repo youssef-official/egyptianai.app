@@ -73,6 +73,28 @@ const Auth = () => {
 
         if (error) throw error;
 
+        // Send welcome email
+        if (data.user) {
+          try {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+              },
+              body: JSON.stringify({
+                type: 'welcome',
+                to: email,
+                data: {
+                  name: fullName
+                }
+              })
+            });
+          } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+          }
+        }
+
         toast({
           title: "تم إنشاء الحساب!",
           description: "يمكنك الآن تسجيل الدخول",

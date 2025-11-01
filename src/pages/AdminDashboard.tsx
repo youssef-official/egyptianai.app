@@ -14,6 +14,7 @@ import verifiedBadge from "@/assets/verified-badge.png";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const AdminDashboard = () => {
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
@@ -30,6 +31,9 @@ const AdminDashboard = () => {
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [bulkEmailTarget, setBulkEmailTarget] = useState<"all" | "users" | "doctors">("all");
+  const [bulkEmailSubject, setBulkEmailSubject] = useState("");
+  const [bulkEmailMessage, setBulkEmailMessage] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -542,6 +546,103 @@ const AdminDashboard = () => {
       toast({
         title: "خطأ",
         description: error.message || "حدث خطأ أثناء إرسال الإيميل",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendBulkEmail = async () => {
+    if (!bulkEmailSubject || !bulkEmailMessage) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء ملء جميع الحقول",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get all users' emails based on target
+      let query = supabase.from("profiles").select("email, user_type");
+      
+      if (bulkEmailTarget === "users") {
+        query = query.eq("user_type", "user");
+      } else if (bulkEmailTarget === "doctors") {
+        query = query.eq("user_type", "doctor");
+      }
+
+      const { data: profiles, error } = await query;
+
+      if (error) throw error;
+
+      if (!profiles || profiles.length === 0) {
+        toast({
+          title: "تحذير",
+          description: "لا يوجد مستخدمين لإرسال الإيميل إليهم",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Filter out profiles without email
+      const validProfiles = profiles.filter(p => p.email);
+
+      if (validProfiles.length === 0) {
+        toast({
+          title: "تحذير",
+          description: "لا يوجد إيميلات صالحة",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Send emails
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const profile of validProfiles) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            },
+            body: JSON.stringify({
+              type: 'custom',
+              to: profile.email,
+              data: {
+                subject: bulkEmailSubject,
+                message: bulkEmailMessage
+              }
+            })
+          });
+
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch {
+          failCount++;
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      toast({
+        title: "اكتمل الإرسال!",
+        description: `تم إرسال ${successCount} إيميل بنجاح، فشل ${failCount}`,
+      });
+
+      // Reset form
+      setBulkEmailSubject("");
+      setBulkEmailMessage("");
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ أثناء إرسال الإيميلات",
         variant: "destructive",
       });
     }
@@ -1258,7 +1359,7 @@ const AdminDashboard = () => {
             <Card className="rounded-3xl border-0 shadow-medium">
               <CardHeader>
                 <CardTitle>إرسال إيميل مخصص</CardTitle>
-                <CardDescription>أرسل إيميل إلى أي مستخدم على المنصة</CardDescription>
+                <CardDescription>أرسل إيميل إلى مستخدم واحد</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -1297,6 +1398,56 @@ const AdminDashboard = () => {
                   size="lg"
                 >
                   إرسال الإيميل
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-0 shadow-medium">
+              <CardHeader>
+                <CardTitle>إرسال إيميل جماعي</CardTitle>
+                <CardDescription>أرسل إيميل لجميع المستخدمين أو الأطباء</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">المستهدفون</label>
+                  <Select value={bulkEmailTarget} onValueChange={(value: any) => setBulkEmailTarget(value)}>
+                    <SelectTrigger className="rounded-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل (مستخدمين + أطباء)</SelectItem>
+                      <SelectItem value="users">المستخدمين فقط</SelectItem>
+                      <SelectItem value="doctors">الأطباء فقط</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">الموضوع</label>
+                  <Input
+                    type="text"
+                    value={bulkEmailSubject}
+                    onChange={(e) => setBulkEmailSubject(e.target.value)}
+                    placeholder="موضوع الإيميل الجماعي"
+                    className="rounded-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">الرسالة</label>
+                  <Textarea
+                    value={bulkEmailMessage}
+                    onChange={(e) => setBulkEmailMessage(e.target.value)}
+                    placeholder="اكتب رسالتك هنا... سيتم إرسالها لجميع المستهدفين"
+                    className="rounded-2xl min-h-[200px]"
+                    rows={8}
+                  />
+                </div>
+                <Button 
+                  onClick={sendBulkEmail}
+                  className="w-full rounded-full"
+                  size="lg"
+                  variant="default"
+                >
+                  إرسال لجميع المستهدفين
                 </Button>
               </CardContent>
             </Card>
