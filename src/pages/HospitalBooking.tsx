@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Building2, Star, Phone, Mail, ChevronDown, ChevronUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Star, Phone, Mail } from "lucide-react";
 import { Helmet } from "react-helmet";
 
 const HospitalBooking = () => {
@@ -22,7 +22,6 @@ const HospitalBooking = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [showDoctors, setShowDoctors] = useState(false);
   
   // Form states
   const [selectedDoctor, setSelectedDoctor] = useState("");
@@ -42,7 +41,6 @@ const HospitalBooking = () => {
 
   const loadData = async () => {
     try {
-      // Load hospital
       const { data: hospitalData, error: hospitalError } = await supabase
         .from("hospitals")
         .select("*")
@@ -52,7 +50,6 @@ const HospitalBooking = () => {
       if (hospitalError) throw hospitalError;
       setHospital(hospitalData);
 
-      // Load doctors
       const { data: doctorsData } = await supabase
         .from("hospital_doctors")
         .select("*")
@@ -61,13 +58,12 @@ const HospitalBooking = () => {
 
       setDoctors(doctorsData || []);
 
-      // Load reviews
       const { data: reviewsData } = await supabase
         .from("hospital_reviews")
         .select("*, profiles(full_name)")
         .eq("hospital_id", hospitalId)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
 
       setReviews(reviewsData || []);
     } catch (error) {
@@ -87,6 +83,7 @@ const HospitalBooking = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("يجب تسجيل الدخول أولاً");
+      navigate("/auth");
       return;
     }
 
@@ -117,85 +114,33 @@ const HospitalBooking = () => {
       return;
     }
 
-    const doctor = doctors.find((d) => d.id === selectedDoctor);
-    if (!doctor) return;
-
     setSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const doctor = doctors.find((d) => d.id === selectedDoctor);
       
-      // Check wallet balance
-      if (user) {
-        const { data: walletData } = await supabase
-          .from("wallets")
-          .select("balance")
-          .eq("user_id", user.id)
-          .single();
-
-        if (!walletData || walletData.balance < (doctor.consultation_price || 0)) {
-          toast.error("رصيد المحفظة غير كافٍ");
-          setSubmitting(false);
-          return;
-        }
-      }
-
-      // Create booking
-      const { data: bookingData, error: bookingError } = await supabase
+      const { error } = await supabase
         .from("hospital_bookings")
         .insert({
           hospital_id: hospitalId,
-          user_id: user?.id || null,
           doctor_id: selectedDoctor,
-          doctor_name: doctor.doctor_name,
-          specialization: doctor.specialization,
+          doctor_name: doctor?.doctor_name,
+          specialization: doctor?.specialization,
           patient_name: patientName,
           patient_phone: patientPhone,
           patient_area: patientArea || null,
-          price: doctor.consultation_price || 0,
-          payment_method: "wallet",
-          is_paid: true,
-          status: "confirmed",
-        })
-        .select()
-        .single();
+          price: doctor?.consultation_price || 0,
+          status: "pending",
+        });
 
-      if (bookingError) throw bookingError;
+      if (error) throw error;
 
-      // Deduct from wallet if user is logged in
-      if (user) {
-        const { data: currentWallet } = await supabase
-          .from("wallets")
-          .select("balance")
-          .eq("user_id", user.id)
-          .single();
-          
-        if (currentWallet) {
-          await supabase
-            .from("wallets")
-            .update({ balance: currentWallet.balance - (doctor.consultation_price || 0) })
-            .eq("user_id", user.id);
-        }
-      }
-
-      toast.success(
-        <div className="space-y-2">
-          <p className="font-bold">تم الحجز بنجاح! ✅</p>
-          <p className="text-sm">كود الحجز: <span className="font-mono font-bold">{bookingData.id}</span></p>
-          <p className="text-sm">قم بإظهار هذا الكود في المستشفى لإتمام الكشف</p>
-        </div>,
-        { duration: 10000 }
-      );
-
-      // Reset form
+      toast.success("تم إرسال طلب الحجز بنجاح! سيتم التواصل معك قريباً.");
       setSelectedDoctor("");
       setPatientName("");
       setPatientPhone("");
       setPatientArea("");
-      setShowDoctors(false);
-
     } catch (error: any) {
-      console.error("Booking error:", error);
       toast.error(error.message || "خطأ في الحجز");
     } finally {
       setSubmitting(false);
@@ -204,7 +149,7 @@ const HospitalBooking = () => {
 
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : "لا توجد تقييمات";
+    : "0";
 
   if (loading) {
     return (
@@ -225,268 +170,131 @@ const HospitalBooking = () => {
   return (
     <>
       <Helmet>
-        <title>حجز استشارة - {hospital.name} | Cura Verse</title>
-        <meta name="description" content={`احجز استشارة طبية في ${hospital.name} مع أفضل الأطباء المتخصصين`} />
+        <title>{hospital?.name || "حجز موعد"} - منصة الرعاية الطبية</title>
+        <meta name="description" content={`احجز موعدك في ${hospital?.name || "المستشفى"}. أطباء متخصصون وخدمات طبية متميزة.`} />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <Button
-            onClick={() => navigate("/hospital-selection")}
-            variant="ghost"
-            className="gap-2 hover-scale rounded-2xl"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            العودة للمستشفيات
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-3xl">
+          <Button onClick={() => navigate("/hospital-selection")} variant="ghost" className="mb-4 sm:mb-6 gap-2">
+            <ArrowLeft className="w-4 h-4" />العودة
           </Button>
 
           {/* Hospital Info Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="shadow-strong rounded-3xl border-0 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 pb-4">
-                <div className="flex gap-4 items-start">
-                  {hospital.logo_url ? (
-                    <img
-                      src={hospital.logo_url}
-                      alt={hospital.name}
-                      className="w-24 h-24 rounded-2xl object-cover shadow-md"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-md">
-                      <Building2 className="w-12 h-12 text-white" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl md:text-3xl mb-2">{hospital.name}</CardTitle>
-                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-4 h-4" />
-                        <span dir="ltr">{hospital.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-4 h-4" />
-                        <span>{hospital.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                        <span className="font-semibold">{averageRating}</span>
-                        <span className="text-xs">({reviews.length} تقييم)</span>
-                      </div>
+          <Card className="rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 overflow-hidden">
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                {hospital?.logo_url && (
+                  <img src={hospital.logo_url} alt={hospital.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shadow-md" />
+                )}
+                <div className="flex-1 w-full">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2">{hospital?.name}</h1>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2"><Phone className="w-4 h-4" /><span dir="ltr">{hospital?.phone}</span></div>
+                    <div className="flex items-center gap-2"><Mail className="w-4 h-4" />{hospital?.email}</div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <Badge className="text-xs sm:text-sm" variant={hospital?.status === "empty" ? "default" : hospital?.status === "very_crowded" ? "destructive" : "secondary"}>
+                      {hospital?.status === "empty" ? "فارغ" : hospital?.status === "low_traffic" ? "ازدحام خفيف" : hospital?.status === "medium_traffic" ? "ازدحام متوسط" : hospital?.status === "high_traffic" ? "ازدحام عالي" : "مزدحم جداً"}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                      <span className="text-sm font-semibold">{averageRating}</span>
+                      <span className="text-xs text-muted-foreground">({reviews.length})</span>
                     </div>
                   </div>
                 </div>
-              </CardHeader>
+              </div>
+            </div>
+          </Card>
 
-              <CardContent className="p-6 space-y-6">
-                {/* Statistics */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 rounded-2xl bg-primary/5">
-                    <div className="text-2xl font-bold text-primary">{doctors.length}</div>
-                    <div className="text-sm text-muted-foreground">أطباء متاحين</div>
-                  </div>
-                  <div className="text-center p-4 rounded-2xl bg-primary/5">
-                    <div className="text-2xl font-bold text-primary">{reviews.length}</div>
-                    <div className="text-sm text-muted-foreground">تقييم</div>
-                  </div>
-                  <div className="text-center p-4 rounded-2xl bg-primary/5">
-                    <div className="text-2xl font-bold text-primary">
-                      {hospital.status === "empty" ? "فارغ" :
-                       hospital.status === "low_traffic" ? "قليل" :
-                       hospital.status === "medium_traffic" ? "متوسط" :
-                       hospital.status === "high_traffic" ? "مزدحم" : "جداً"}
-                    </div>
-                    <div className="text-sm text-muted-foreground">الزحام</div>
-                  </div>
-                </div>
-
-                {/* Reviews Section */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">التقييمات</h3>
-                  
-                  {/* Add Review */}
-                  <div className="p-4 rounded-2xl bg-muted/30 space-y-3">
-                    <Label>أضف تقييمك</Label>
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() => setRating(star)}
-                          className="transition-transform hover:scale-110"
-                        >
-                          <Star
-                            className={`w-8 h-8 ${
-                              star <= rating
-                                ? "fill-yellow-500 text-yellow-500"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <Textarea
-                      placeholder="اكتب تعليقك (اختياري)"
-                      value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      className="rounded-xl"
-                    />
-                    <Button onClick={handleSubmitReview} className="rounded-xl">
-                      إضافة التقييم
-                    </Button>
-                  </div>
-
-                  {/* Display Reviews */}
-                  <div className="space-y-3">
-                    {reviews.map((review) => (
-                      <div key={review.id} className="p-4 rounded-2xl bg-muted/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`w-4 h-4 ${
-                                  star <= review.rating
-                                    ? "fill-yellow-500 text-yellow-500"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm font-semibold">
-                            {review.profiles?.full_name || "مستخدم"}
-                          </span>
-                        </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                        )}
-                      </div>
+          {/* Booking Form */}
+          <Card className="rounded-2xl sm:rounded-3xl mb-4 sm:mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">احجز موعدك</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div>
+                <Label className="text-sm sm:text-base">اختر الطبيب</Label>
+                <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+                  <SelectTrigger className="text-sm sm:text-base">
+                    <SelectValue placeholder="اختر الطبيب" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id} className="text-sm sm:text-base">
+                        د. {doctor.doctor_name} - {doctor.specialization} ({doctor.consultation_price} جنيه)
+                      </SelectItem>
                     ))}
-                  </div>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm sm:text-base">اسم المريض</Label>
+                <Input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="أدخل اسم المريض" className="text-sm sm:text-base" />
+              </div>
+
+              <div>
+                <Label className="text-sm sm:text-base">رقم الهاتف</Label>
+                <Input value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="أدخل رقم الهاتف" className="text-sm sm:text-base" />
+              </div>
+
+              <div>
+                <Label className="text-sm sm:text-base">المنطقة (اختياري)</Label>
+                <Input value={patientArea} onChange={(e) => setPatientArea(e.target.value)} placeholder="أدخل المنطقة" className="text-sm sm:text-base" />
+              </div>
+
+              <Button onClick={handleBooking} disabled={submitting} className="w-full text-sm sm:text-base">
+                {submitting ? "جاري الحجز..." : "تأكيد الحجز"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Reviews Section */}
+          <Card className="rounded-2xl sm:rounded-3xl">
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                التقييمات
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 sm:space-y-4">
+              {reviews.length === 0 ? (
+                <p className="text-sm sm:text-base text-muted-foreground text-center py-4">لا توجد تقييمات بعد</p>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="p-3 sm:p-4 bg-muted/50 rounded-xl">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-3 h-3 sm:w-4 sm:h-4 ${i < review.rating ? "fill-yellow-500 text-yellow-500" : "text-gray-300"}`} />
+                          ))}
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold">{review.profiles?.full_name || "مستخدم"}</span>
+                      </div>
+                      {review.comment && <p className="text-xs sm:text-sm text-muted-foreground">{review.comment}</p>}
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                {/* Booking Section */}
-                <div className="space-y-4">
-                  <Button
-                    onClick={() => setShowDoctors(!showDoctors)}
-                    className="w-full rounded-xl text-lg py-6 gap-2"
-                    size="lg"
-                  >
-                    بدء الحجز
-                    {showDoctors ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </Button>
-
-                  <AnimatePresence>
-                    {showDoctors && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-4"
-                      >
-                        {doctors.length === 0 ? (
-                          <p className="text-center text-muted-foreground py-8">
-                            لا يوجد أطباء متاحون حالياً
-                          </p>
-                        ) : (
-                          <>
-                            <div className="space-y-2">
-                              <Label>اختر الطبيب *</Label>
-                              <div className="grid gap-3">
-                                {doctors.map((doctor) => (
-                                  <button
-                                    key={doctor.id}
-                                    onClick={() => setSelectedDoctor(doctor.id)}
-                                    className={`p-4 rounded-xl border-2 text-right transition-all ${
-                                      selectedDoctor === doctor.id
-                                        ? "border-primary bg-primary/5"
-                                        : "border-border hover:border-primary/50"
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <p className="font-bold">{doctor.doctor_name}</p>
-                                        <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
-                                      </div>
-                                      <Badge variant="secondary" className="rounded-lg">
-                                        {doctor.consultation_price} جنيه
-                                      </Badge>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {selectedDoctor && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="space-y-4 p-4 rounded-2xl bg-muted/30"
-                              >
-                                <div className="space-y-2">
-                                  <Label htmlFor="name">اسم المريض *</Label>
-                                  <Input
-                                    id="name"
-                                    value={patientName}
-                                    onChange={(e) => setPatientName(e.target.value)}
-                                    className="rounded-xl"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="phone">رقم الهاتف *</Label>
-                                  <Input
-                                    id="phone"
-                                    type="tel"
-                                    value={patientPhone}
-                                    onChange={(e) => setPatientPhone(e.target.value)}
-                                    className="rounded-xl"
-                                    dir="ltr"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="area">المنطقة</Label>
-                                  <Input
-                                    id="area"
-                                    value={patientArea}
-                                    onChange={(e) => setPatientArea(e.target.value)}
-                                    className="rounded-xl"
-                                  />
-                                </div>
-
-                                <div className="p-4 rounded-xl bg-primary/10 space-y-2">
-                                  <p className="text-sm font-semibold">ملخص الحجز:</p>
-                                  <div className="text-sm space-y-1">
-                                    <p>• الطبيب: {doctors.find(d => d.id === selectedDoctor)?.doctor_name}</p>
-                                    <p>• التخصص: {doctors.find(d => d.id === selectedDoctor)?.specialization}</p>
-                                    <p>• التكلفة: {doctors.find(d => d.id === selectedDoctor)?.consultation_price} جنيه</p>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-2">
-                                    💡 سيتم خصم المبلغ من محفظتك وستحصل على كود الحجز لإظهاره في المستشفى
-                                  </p>
-                                </div>
-
-                                <Button
-                                  onClick={handleBooking}
-                                  disabled={submitting}
-                                  className="w-full rounded-xl py-6"
-                                  size="lg"
-                                >
-                                  {submitting ? "جاري الحجز..." : "تأكيد الحجز"}
-                                </Button>
-                              </motion.div>
-                            )}
-                          </>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              {/* Add Review Form */}
+              <div className="pt-3 sm:pt-4 border-t space-y-3">
+                <Label className="text-sm sm:text-base">أضف تقييمك</Label>
+                <div className="flex gap-2 justify-center sm:justify-start">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} onClick={() => setRating(star)} type="button" className="focus:outline-none transition-transform hover:scale-110 active:scale-95">
+                      <Star className={`w-6 h-6 sm:w-8 sm:h-8 ${star <= rating ? "fill-yellow-500 text-yellow-500" : "text-gray-300"}`} />
+                    </button>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                <Textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder="اكتب تعليقك (اختياري)" className="text-sm sm:text-base" rows={3} />
+                <Button onClick={handleSubmitReview} className="w-full text-sm sm:text-base">إضافة التقييم</Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </>
