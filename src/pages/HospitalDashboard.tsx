@@ -26,6 +26,15 @@ const HospitalDashboard = () => {
   const [doctorPassword, setDoctorPassword] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [consultationPrice, setConsultationPrice] = useState("");
+  
+  // New booking form states
+  const [bookingType, setBookingType] = useState<"online" | "offline">("online");
+  const [onlineBookingId, setOnlineBookingId] = useState("");
+  const [offlinePatientName, setOfflinePatientName] = useState("");
+  const [offlinePatientPhone, setOfflinePatientPhone] = useState("");
+  const [offlinePatientArea, setOfflinePatientArea] = useState("");
+  const [offlineDoctor, setOfflineDoctor] = useState("");
+  const [offlinePrice, setOfflinePrice] = useState("");
 
   const navigate = useNavigate();
 
@@ -106,6 +115,7 @@ const HospitalDashboard = () => {
           .label { font-weight: 600; color: #374151; }
           .value { color: #6b7280; }
           .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #e5e7eb; color: #9ca3af; font-size: 12px; }
+          .powered-by { margin-top: 10px; font-size: 11px; color: #6b7280; }
         </style>
       </head>
       <body>
@@ -127,6 +137,7 @@ const HospitalDashboard = () => {
           </div>
           <div class="footer">
             <p>شكراً لاختياركم ${hospital?.name || "مستشفانا"}</p>
+            <p class="powered-by">تم صناعة النظام بواسطة - Cura Verse</p>
           </div>
         </div>
         <script>window.onload = function() { window.print(); };</script>
@@ -178,6 +189,79 @@ const HospitalDashboard = () => {
     }
   };
 
+  const handleOnlineBooking = async () => {
+    if (!onlineBookingId.trim()) {
+      toast.error("يرجى إدخال معرف الحجز");
+      return;
+    }
+
+    try {
+      const { data: booking, error } = await supabase
+        .from("hospital_bookings")
+        .select("*")
+        .eq("id", onlineBookingId.trim())
+        .eq("hospital_id", hospital.id)
+        .single();
+
+      if (error || !booking) {
+        toast.error("لم يتم العثور على الحجز");
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from("hospital_bookings")
+        .update({ status: "confirmed", is_paid: true })
+        .eq("id", onlineBookingId.trim());
+
+      if (updateError) throw updateError;
+
+      toast.success("تم تأكيد الحجز بنجاح");
+      setOnlineBookingId("");
+      loadHospitalData();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleOfflineBooking = async () => {
+    if (!offlinePatientName || !offlinePatientPhone || !offlineDoctor || !offlinePrice) {
+      toast.error("يرجى ملء جميع الحقول");
+      return;
+    }
+
+    try {
+      const selectedDoctor = doctors.find(d => d.id === offlineDoctor);
+      
+      const { error } = await supabase
+        .from("hospital_bookings")
+        .insert({
+          hospital_id: hospital.id,
+          patient_name: offlinePatientName,
+          patient_phone: offlinePatientPhone,
+          patient_area: offlinePatientArea || null,
+          doctor_id: offlineDoctor,
+          doctor_name: selectedDoctor?.doctor_name,
+          specialization: selectedDoctor?.specialization,
+          price: parseFloat(offlinePrice),
+          status: "confirmed",
+          is_paid: true,
+          payment_method: "cash"
+        });
+
+      if (error) throw error;
+
+      toast.success("تم إضافة الحجز بنجاح");
+      setOfflinePatientName("");
+      setOfflinePatientPhone("");
+      setOfflinePatientArea("");
+      setOfflineDoctor("");
+      setOfflinePrice("");
+      loadHospitalData();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -199,18 +283,50 @@ const HospitalDashboard = () => {
         </div>
 
         <Tabs defaultValue="bookings" className="space-y-4">
-          <TabsList><TabsTrigger value="bookings">الحجوزات</TabsTrigger><TabsTrigger value="doctors">الأطباء</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="bookings">الحجوزات</TabsTrigger><TabsTrigger value="add-booking">إضافة حجز</TabsTrigger><TabsTrigger value="doctors">الأطباء</TabsTrigger></TabsList>
 
           <TabsContent value="bookings" className="space-y-4">
-            <Card className="rounded-3xl"><CardHeader><CardTitle>الحجوزات الأخيرة</CardTitle></CardHeader><CardContent className="grid gap-4">
-              {bookings.map((booking) => (
-                <div key={booking.id} className="p-4 rounded-2xl bg-card border space-y-2">
-                  <div className="flex justify-between"><div><p className="font-semibold">{booking.patient_name}</p><p className="text-sm text-muted-foreground">{booking.patient_phone}</p></div><Badge>{booking.status === "confirmed" ? "مؤكد" : booking.status}</Badge></div>
-                  <div className="text-sm"><p>كود: <span className="font-mono font-bold">{booking.id}</span></p><p>الطبيب: {booking.doctor_name}</p><p>السعر: {booking.price} جنيه</p></div>
-                  <Button onClick={() => printBookingReceipt(booking)} variant="outline" size="sm" className="w-full gap-2"><Printer className="w-4 h-4" />طباعة الوصل</Button>
-                </div>
-              ))}
+            <Card className="rounded-3xl"><CardHeader><CardTitle>آخر الحجوزات</CardTitle></CardHeader><CardContent className="grid gap-4">
+              {bookings.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا توجد حجوزات بعد</p>
+              ) : (
+                bookings.map((booking) => (
+                  <div key={booking.id} className="p-4 rounded-2xl bg-card border space-y-2">
+                    <div className="flex justify-between"><div><p className="font-semibold">{booking.patient_name}</p><p className="text-sm text-muted-foreground">{booking.patient_phone}</p></div><Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>{booking.status === "confirmed" ? "مؤكد" : "معلق"}</Badge></div>
+                    <div className="text-sm"><p>كود: <span className="font-mono font-bold">{booking.id}</span></p><p>الطبيب: {booking.doctor_name}</p><p>السعر: {booking.price} جنيه</p></div>
+                    <Button onClick={() => printBookingReceipt(booking)} variant="outline" size="sm" className="w-full gap-2"><Printer className="w-4 h-4" />طباعة الوصل</Button>
+                  </div>
+                ))
+              )}
             </CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="add-booking" className="space-y-4">
+            <Card className="rounded-3xl">
+              <CardHeader><CardTitle>إضافة حجز جديد</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button onClick={() => setBookingType("online")} variant={bookingType === "online" ? "default" : "outline"} className="flex-1">حجز أونلاين</Button>
+                  <Button onClick={() => setBookingType("offline")} variant={bookingType === "offline" ? "default" : "outline"} className="flex-1">حجز أوفلاين</Button>
+                </div>
+
+                {bookingType === "online" ? (
+                  <div className="space-y-4">
+                    <div><Label>معرف الحجز</Label><Input value={onlineBookingId} onChange={(e) => setOnlineBookingId(e.target.value)} placeholder="أدخل معرف الحجز" /></div>
+                    <Button onClick={handleOnlineBooking} className="w-full">تأكيد الحجز</Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div><Label>اسم المريض</Label><Input value={offlinePatientName} onChange={(e) => setOfflinePatientName(e.target.value)} required /></div>
+                    <div><Label>رقم الهاتف</Label><Input value={offlinePatientPhone} onChange={(e) => setOfflinePatientPhone(e.target.value)} required /></div>
+                    <div><Label>المنطقة</Label><Input value={offlinePatientArea} onChange={(e) => setOfflinePatientArea(e.target.value)} /></div>
+                    <div><Label>الطبيب</Label><Select value={offlineDoctor} onValueChange={setOfflineDoctor}><SelectTrigger><SelectValue placeholder="اختر الطبيب" /></SelectTrigger><SelectContent>{doctors.map((doc) => (<SelectItem key={doc.id} value={doc.id}>{doc.doctor_name} - {doc.specialization}</SelectItem>))}</SelectContent></Select></div>
+                    <div><Label>السعر</Label><Input type="number" value={offlinePrice} onChange={(e) => setOfflinePrice(e.target.value)} required /></div>
+                    <Button onClick={handleOfflineBooking} className="w-full">إضافة الحجز</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="doctors" className="space-y-4">
