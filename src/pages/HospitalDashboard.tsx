@@ -30,6 +30,8 @@ const HospitalDashboard = () => {
   // Booking form
   const [bookingType, setBookingType] = useState<"online" | "offline">("online");
   const [onlineBookingId, setOnlineBookingId] = useState("");
+  const [onlineBookingData, setOnlineBookingData] = useState<any>(null);
+
   const [offlinePatientName, setOfflinePatientName] = useState("");
   const [offlinePatientPhone, setOfflinePatientPhone] = useState("");
   const [offlinePatientArea, setOfflinePatientArea] = useState("");
@@ -87,110 +89,33 @@ const HospitalDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("hospitalSession");
-    navigate("/hospital-auth");
-  };
+  // ⭐ جلب بيانات الحجز بمجرد كتابة ID
+  const fetchOnlineBooking = async (bookingId: string) => {
+    if (!bookingId.trim()) {
+      setOnlineBookingData(null);
+      return;
+    }
 
-  const printBookingReceipt = (booking: any) => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    const receiptHTML = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <title>وصل حجز - ${booking.id}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: #f5f5f5; }
-          .receipt { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .header { text-align: center; border-bottom: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
-          .logo { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 12px; object-fit: cover; }
-          h1 { font-size: 28px; color: #1f2937; margin-bottom: 8px; }
-          .booking-code { text-align: center; margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px; color: white; }
-          .booking-code-value { font-size: 32px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; }
-          .info-section { margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 8px; }
-          .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
-          .label { font-weight: 600; color: #374151; }
-          .value { color: #6b7280; }
-          .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #e5e7eb; color: #9ca3af; font-size: 12px; }
-          .powered-by { margin-top: 10px; font-size: 11px; color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="header">
-            ${hospital?.logo_url ? `<img src="${hospital.logo_url}" alt="Logo" class="logo" />` : ''}
-            <h1>${hospital?.name || "المستشفى"}</h1>
-          </div>
-          <div class="booking-code">
-            <div class="booking-code-value">${booking.id}</div>
-          </div>
-          <div class="info-section">
-            <div class="info-row"><span class="label">اسم المريض:</span><span class="value">${booking.patient_name}</span></div>
-            <div class="info-row"><span class="label">رقم الهاتف:</span><span class="value">${booking.patient_phone}</span></div>
-            ${booking.patient_area ? `<div class="info-row"><span class="label">المنطقة:</span><span class="value">${booking.patient_area}</span></div>` : ''}
-            <div class="info-row"><span class="label">الطبيب:</span><span class="value">${booking.doctor_name || "غير محدد"}</span></div>
-            <div class="info-row"><span class="label">التخصص:</span><span class="value">${booking.specialization || "غير محدد"}</span></div>
-            <div class="info-row"><span class="label">التكلفة:</span><span class="value">${booking.price} جنيه</span></div>
-          </div>
-          <div class="footer">
-            <p>شكراً لاختياركم ${hospital?.name || "مستشفانا"}</p>
-            <p class="powered-by">تم صناعة النظام بواسطة - Cura Verse</p>
-          </div>
-        </div>
-        <script>window.onload = function() { window.print(); };</script>
-      </body>
-      </html>`;
-
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
-  };
-
-  const addDoctor = async (e: React.FormEvent) => {
-    e.preventDefault();
     try {
-      const { error } = await supabase.from("hospital_doctors").insert({
-        hospital_id: hospital.id,
-        doctor_name: doctorName,
-        doctor_email: doctorEmail,
-        doctor_password: doctorPassword,
-        specialization,
-        consultation_price: parseFloat(consultationPrice) || 0,
-        is_available: true,
-      });
+      const { data, error } = await supabase
+        .from("hospital_bookings")
+        .select("*")
+        .eq("id", bookingId.trim())
+        .eq("hospital_id", hospital?.id)
+        .single();
 
-      if (error) throw error;
-      toast.success("تم إضافة الطبيب بنجاح");
-      loadHospitalData();
+      if (error || !data) {
+        setOnlineBookingData(null);
+        return;
+      }
 
-      setDoctorName("");
-      setDoctorEmail("");
-      setDoctorPassword("");
-      setSpecialization("");
-      setConsultationPrice("");
-    } catch (error: any) {
-      toast.error(error.message);
+      setOnlineBookingData(data);
+    } catch (err) {
+      console.log(err);
     }
   };
 
-  const toggleDoctorAvailability = async (doctorId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("hospital_doctors")
-        .update({ is_available: !currentStatus })
-        .eq("id", doctorId);
-
-      if (error) throw error;
-      toast.success("تم تحديث حالة الطبيب");
-      loadHospitalData();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
-
+  // ⭐ تأكيد الحجز أونلاين + منع التكرار
   const handleOnlineBooking = async () => {
     if (!onlineBookingId.trim()) {
       toast.error("يرجى إدخال معرف الحجز");
@@ -210,6 +135,13 @@ const HospitalDashboard = () => {
         return;
       }
 
+      // ❌ لو Confirmed → لا تعيده تاني
+      if (booking.status === "confirmed") {
+        toast.error("هذا الحجز تم استخدامه مسبقًا");
+        return;
+      }
+
+      // ✔️ تحويله إلى confirmed
       const { error: updateError } = await supabase
         .from("hospital_bookings")
         .update({ status: "confirmed", is_paid: true })
@@ -218,53 +150,15 @@ const HospitalDashboard = () => {
       if (updateError) throw updateError;
 
       toast.success("تم تأكيد الحجز بنجاح");
+
       setOnlineBookingId("");
+      setOnlineBookingData(null);
       loadHospitalData();
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-
-  const handleOfflineBooking = async () => {
-    if (!offlinePatientName || !offlinePatientPhone || !offlineDoctor || !offlinePrice) {
-      toast.error("يرجى ملء جميع الحقول");
-      return;
-    }
-
-    try {
-      const selectedDoctor = doctors.find(d => d.id === offlineDoctor);
-
-      const { error } = await supabase
-        .from("hospital_bookings")
-        .insert({
-          hospital_id: hospital.id,
-          patient_name: offlinePatientName,
-          patient_phone: offlinePatientPhone,
-          patient_area: offlinePatientArea || null,
-          doctor_id: offlineDoctor,
-          doctor_name: selectedDoctor?.doctor_name,
-          specialization: selectedDoctor?.specialization,
-          price: parseFloat(offlinePrice),
-          status: "confirmed",
-          is_paid: true,
-          payment_method: "cash"
-        });
-
-      if (error) throw error;
-
-      toast.success("تم إضافة الحجز بنجاح");
-
-      setOfflinePatientName("");
-      setOfflinePatientPhone("");
-      setOfflinePatientArea("");
-      setOfflineDoctor("");
-      setOfflinePrice("");
-
-      loadHospitalData();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
+  // ====== الجزء الثاني - الواجهة والـ JSX ======
 
   if (loading) {
     return (
@@ -282,9 +176,19 @@ const HospitalDashboard = () => {
             <h1 className="text-3xl font-bold">لوحة التحكم - {hospital?.name}</h1>
             <p className="text-muted-foreground">إدارة المستشفى والحجوزات</p>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="gap-2">
-            <LogOut className="w-4 h-4" /> تسجيل الخروج
-          </Button>
+
+          <div className="flex items-center gap-3">
+            {/* يمكن إضافة badge يعرض الحالة الحالية هنا */}
+            <div>
+              <Badge variant="outline" className="capitalize">
+                {status?.replace("_", " ") || "غير معروف"}
+              </Badge>
+            </div>
+
+            <Button onClick={handleLogout} variant="outline" className="gap-2">
+              <LogOut className="w-4 h-4" /> تسجيل الخروج
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -303,10 +207,10 @@ const HospitalDashboard = () => {
               <p className="text-sm text-muted-foreground">إجمالي الحجوزات</p>
             </CardContent>
           </Card>
+
+          {/* ممكن تضيف كروت حالة إضافية هنا */}
         </div>
 
-        {/*    ⭐⭐⭐  TABS WITH NEW STATUS TAB  ⭐⭐⭐ */}
-        
         <Tabs defaultValue="bookings" className="space-y-4">
           <TabsList>
             <TabsTrigger value="bookings">الحجوزات</TabsTrigger>
@@ -327,44 +231,30 @@ const HospitalDashboard = () => {
                   <p className="text-center text-muted-foreground py-8">لا توجد حجوزات بعد</p>
                 ) : (
                   bookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="p-4 rounded-2xl bg-card border space-y-2"
-                    >
+                    <div key={booking.id} className="p-4 rounded-2xl bg-card border space-y-2">
                       <div className="flex justify-between">
                         <div>
                           <p className="font-semibold">{booking.patient_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.patient_phone}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{booking.patient_phone}</p>
                         </div>
 
-                        <Badge
-                          variant={
-                            booking.status === "confirmed" ? "default" : "secondary"
-                          }
-                        >
+                        <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
                           {booking.status === "confirmed" ? "مؤكد" : "معلق"}
                         </Badge>
                       </div>
 
                       <div className="text-sm">
-                        <p>
-                          كود:{" "}
-                          <span className="font-mono font-bold">{booking.id}</span>
-                        </p>
+                        <p>كود: <span className="font-mono font-bold">{booking.id}</span></p>
                         <p>الطبيب: {booking.doctor_name}</p>
                         <p>السعر: {booking.price} جنيه</p>
                       </div>
 
-                      <Button
-                        onClick={() => printBookingReceipt(booking)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full gap-2"
-                      >
-                        <Printer className="w-4 h-4" /> طباعة الوصل
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={() => printBookingReceipt(booking)} variant="outline" size="sm" className="flex-1 gap-2">
+                          <Printer className="w-4 h-4" /> طباعة الوصل
+                        </Button>
+                        {/* ممكن تضيف أزرار للتعديل/حذف هنا */}
+                      </div>
                     </div>
                   ))
                 )}
@@ -400,16 +290,58 @@ const HospitalDashboard = () => {
 
                 {bookingType === "online" ? (
                   <div className="space-y-4">
+                    {/* Input + Fetch */}
                     <div>
                       <Label>معرف الحجز</Label>
                       <Input
                         value={onlineBookingId}
-                        onChange={(e) => setOnlineBookingId(e.target.value)}
+                        onChange={(e) => {
+                          setOnlineBookingId(e.target.value);
+                          fetchOnlineBooking(e.target.value);
+                        }}
                         placeholder="أدخل معرف الحجز"
                       />
                     </div>
 
-                    <Button onClick={handleOnlineBooking} className="w-full">
+                    {/* عرض بيانات الحجز — أحمر لو pending، أخضر لو confirmed */}
+                    {onlineBookingData ? (
+                      <div
+                        className={`p-4 rounded-xl border space-y-2 ${
+                          onlineBookingData.status === "pending"
+                            ? "bg-red-100 border-red-400 text-red-700"
+                            : "bg-green-100 border-green-400 text-green-700"
+                        }`}
+                      >
+                        <p><strong>الاسم:</strong> {onlineBookingData.patient_name}</p>
+                        <p><strong>الهاتف:</strong> {onlineBookingData.patient_phone}</p>
+
+                        {onlineBookingData.patient_area && (
+                          <p><strong>المنطقة:</strong> {onlineBookingData.patient_area}</p>
+                        )}
+
+                        <p><strong>الطبيب:</strong> {onlineBookingData.doctor_name || "—"}</p>
+                        <p><strong>التخصص:</strong> {onlineBookingData.specialization || "—"}</p>
+                        <p><strong>السعر:</strong> {onlineBookingData.price} جنيه</p>
+
+                        <p>
+                          <strong>الحالة:</strong>{" "}
+                          {onlineBookingData.status === "pending"
+                            ? "في انتظار التأكيد"
+                            : "تم التأكيد"}
+                        </p>
+                      </div>
+                    ) : (
+                      // لو مافيش بيانات، نعرض رسالة صغيرة
+                      onlineBookingId.trim() ? (
+                        <p className="text-sm text-muted-foreground">لم يتم العثور على الحجز بهذا المعرف</p>
+                      ) : null
+                    )}
+
+                    <Button
+                      onClick={handleOnlineBooking}
+                      disabled={!onlineBookingId.trim()}
+                      className="w-full"
+                    >
                       تأكيد الحجز
                     </Button>
                   </div>
@@ -443,14 +375,10 @@ const HospitalDashboard = () => {
 
                     <div>
                       <Label>الطبيب</Label>
-                      <Select
-                        value={offlineDoctor}
-                        onValueChange={setOfflineDoctor}
-                      >
+                      <Select value={offlineDoctor} onValueChange={setOfflineDoctor}>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر الطبيب" />
                         </SelectTrigger>
-
                         <SelectContent>
                           {doctors.map((doc) => (
                             <SelectItem key={doc.id} value={doc.id}>
@@ -488,58 +416,57 @@ const HospitalDashboard = () => {
               </CardHeader>
 
               <CardContent>
-                <form onSubmit={addDoctor} className="space-y-4">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const { error } = await supabase.from("hospital_doctors").insert({
+                      hospital_id: hospital.id,
+                      doctor_name: doctorName,
+                      doctor_email: doctorEmail,
+                      doctor_password: doctorPassword,
+                      specialization,
+                      consultation_price: parseFloat(consultationPrice) || 0,
+                      is_available: true,
+                    });
+
+                    if (error) throw error;
+                    toast.success("تم إضافة الطبيب بنجاح");
+                    setDoctorName("");
+                    setDoctorEmail("");
+                    setDoctorPassword("");
+                    setSpecialization("");
+                    setConsultationPrice("");
+                    loadHospitalData();
+                  } catch (err: any) {
+                    toast.error(err.message || "حدث خطأ");
+                  }
+                }} className="space-y-4">
                   <div>
                     <Label>اسم الطبيب</Label>
-                    <Input
-                      value={doctorName}
-                      onChange={(e) => setDoctorName(e.target.value)}
-                      required
-                    />
+                    <Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} required />
                   </div>
 
                   <div>
                     <Label>البريد الإلكتروني</Label>
-                    <Input
-                      type="email"
-                      value={doctorEmail}
-                      onChange={(e) => setDoctorEmail(e.target.value)}
-                      required
-                    />
+                    <Input type="email" value={doctorEmail} onChange={(e) => setDoctorEmail(e.target.value)} required />
                   </div>
 
                   <div>
                     <Label>كلمة المرور</Label>
-                    <Input
-                      type="password"
-                      value={doctorPassword}
-                      onChange={(e) => setDoctorPassword(e.target.value)}
-                      required
-                    />
+                    <Input type="password" value={doctorPassword} onChange={(e) => setDoctorPassword(e.target.value)} required />
                   </div>
 
                   <div>
                     <Label>التخصص</Label>
-                    <Input
-                      value={specialization}
-                      onChange={(e) => setSpecialization(e.target.value)}
-                      required
-                    />
+                    <Input value={specialization} onChange={(e) => setSpecialization(e.target.value)} required />
                   </div>
 
                   <div>
                     <Label>سعر الكشف</Label>
-                    <Input
-                      type="number"
-                      value={consultationPrice}
-                      onChange={(e) => setConsultationPrice(e.target.value)}
-                      required
-                    />
+                    <Input type="number" value={consultationPrice} onChange={(e) => setConsultationPrice(e.target.value)} required />
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    <Plus className="w-4 h-4 ml-2" /> إضافة الطبيب
-                  </Button>
+                  <Button type="submit" className="w-full"><Plus className="w-4 h-4 ml-2" /> إضافة الطبيب</Button>
                 </form>
               </CardContent>
             </Card>
@@ -551,29 +478,27 @@ const HospitalDashboard = () => {
 
               <CardContent className="space-y-3">
                 {doctors.map((doctor) => (
-                  <div
-                    key={doctor.id}
-                    className="p-4 rounded-2xl bg-card border flex justify-between items-center"
-                  >
+                  <div key={doctor.id} className="p-4 rounded-2xl bg-card border flex justify-between items-center">
                     <div>
                       <p className="font-semibold">{doctor.doctor_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {doctor.specialization}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
                     </div>
 
-                    <Button
-                      onClick={() =>
-                        toggleDoctorAvailability(doctor.id, doctor.is_available)
+                    <Button onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from("hospital_doctors")
+                          .update({ is_available: !doctor.is_available })
+                          .eq("id", doctor.id);
+
+                        if (error) throw error;
+                        toast.success("تم تحديث حالة الطبيب");
+                        loadHospitalData();
+                      } catch (err: any) {
+                        toast.error(err.message || "حدث خطأ");
                       }
-                      variant={doctor.is_available ? "default" : "outline"}
-                      size="sm"
-                    >
-                      {doctor.is_available ? (
-                        <Eye className="w-4 h-4" />
-                      ) : (
-                        <EyeOff className="w-4 h-4" />
-                      )}
+                    }} variant={doctor.is_available ? "default" : "outline"} size="sm">
+                      {doctor.is_available ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </Button>
                   </div>
                 ))}
@@ -581,7 +506,7 @@ const HospitalDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* ------------------ ⭐ الحالة ⭐ ------------------ */}
+          {/* ------------------ الحالة (Status) ------------------ */}
           <TabsContent value="status" className="space-y-4">
             <Card className="rounded-3xl">
               <CardHeader>
@@ -596,14 +521,12 @@ const HospitalDashboard = () => {
                   onValueChange={async (value: HospitalStatus) => {
                     try {
                       setStatus(value);
-
                       const { error } = await supabase
                         .from("hospitals")
                         .update({ status: value })
                         .eq("id", hospital.id);
 
                       if (error) throw error;
-
                       toast.success("تم تحديث الحالة بنجاح");
                       loadHospitalData();
                     } catch (err) {
