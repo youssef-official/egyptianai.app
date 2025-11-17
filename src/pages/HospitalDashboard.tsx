@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Building2, Users, Calendar, DollarSign, Plus, LogOut, Printer, Edit, Eye, EyeOff } from "lucide-react";
+import { Users, Calendar, Plus, LogOut, Printer, Eye, EyeOff } from "lucide-react";
 
 type HospitalStatus = "empty" | "low_traffic" | "medium_traffic" | "high_traffic" | "very_crowded";
 
@@ -19,15 +19,15 @@ const HospitalDashboard = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const [status, setStatus] = useState<HospitalStatus>("medium_traffic");
   const [loading, setLoading] = useState(true);
-  
+
   // Doctor form
   const [doctorName, setDoctorName] = useState("");
   const [doctorEmail, setDoctorEmail] = useState("");
   const [doctorPassword, setDoctorPassword] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [consultationPrice, setConsultationPrice] = useState("");
-  
-  // New booking form states
+
+  // Booking form
   const [bookingType, setBookingType] = useState<"online" | "offline">("online");
   const [onlineBookingId, setOnlineBookingId] = useState("");
   const [offlinePatientName, setOfflinePatientName] = useState("");
@@ -51,6 +51,7 @@ const HospitalDashboard = () => {
       }
 
       const session = JSON.parse(sessionData);
+
       const { data: hospitalData } = await supabase
         .from("hospitals")
         .select("*")
@@ -164,6 +165,7 @@ const HospitalDashboard = () => {
       if (error) throw error;
       toast.success("تم إضافة الطبيب بنجاح");
       loadHospitalData();
+
       setDoctorName("");
       setDoctorEmail("");
       setDoctorPassword("");
@@ -231,7 +233,7 @@ const HospitalDashboard = () => {
 
     try {
       const selectedDoctor = doctors.find(d => d.id === offlineDoctor);
-      
+
       const { error } = await supabase
         .from("hospital_bookings")
         .insert({
@@ -251,11 +253,13 @@ const HospitalDashboard = () => {
       if (error) throw error;
 
       toast.success("تم إضافة الحجز بنجاح");
+
       setOfflinePatientName("");
       setOfflinePatientPhone("");
       setOfflinePatientArea("");
       setOfflineDoctor("");
       setOfflinePrice("");
+
       loadHospitalData();
     } catch (error: any) {
       toast.error(error.message);
@@ -263,7 +267,11 @@ const HospitalDashboard = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -274,79 +282,349 @@ const HospitalDashboard = () => {
             <h1 className="text-3xl font-bold">لوحة التحكم - {hospital?.name}</h1>
             <p className="text-muted-foreground">إدارة المستشفى والحجوزات</p>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="gap-2"><LogOut className="w-4 h-4" />تسجيل الخروج</Button>
+          <Button onClick={handleLogout} variant="outline" className="gap-2">
+            <LogOut className="w-4 h-4" /> تسجيل الخروج
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="rounded-2xl"><CardContent className="p-6"><Users className="w-8 h-8 text-primary mb-2" /><p className="text-2xl font-bold">{doctors.length}</p><p className="text-sm text-muted-foreground">الأطباء</p></CardContent></Card>
-          <Card className="rounded-2xl"><CardContent className="p-6"><Calendar className="w-8 h-8 text-primary mb-2" /><p className="text-2xl font-bold">{bookings.length}</p><p className="text-sm text-muted-foreground">إجمالي الحجوزات</p></CardContent></Card>
+          <Card className="rounded-2xl">
+            <CardContent className="p-6">
+              <Users className="w-8 h-8 text-primary mb-2" />
+              <p className="text-2xl font-bold">{doctors.length}</p>
+              <p className="text-sm text-muted-foreground">الأطباء</p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl">
+            <CardContent className="p-6">
+              <Calendar className="w-8 h-8 text-primary mb-2" />
+              <p className="text-2xl font-bold">{bookings.length}</p>
+              <p className="text-sm text-muted-foreground">إجمالي الحجوزات</p>
+            </CardContent>
+          </Card>
         </div>
 
+        {/*    ⭐⭐⭐  TABS WITH NEW STATUS TAB  ⭐⭐⭐ */}
+        
         <Tabs defaultValue="bookings" className="space-y-4">
-          <TabsList><TabsTrigger value="bookings">الحجوزات</TabsTrigger><TabsTrigger value="add-booking">إضافة حجز</TabsTrigger><TabsTrigger value="doctors">الأطباء</TabsTrigger></TabsList>
+          <TabsList>
+            <TabsTrigger value="bookings">الحجوزات</TabsTrigger>
+            <TabsTrigger value="add-booking">إضافة حجز</TabsTrigger>
+            <TabsTrigger value="doctors">الأطباء</TabsTrigger>
+            <TabsTrigger value="status">الحالة</TabsTrigger>
+          </TabsList>
 
+          {/* ------------------ الحجوزات ------------------ */}
           <TabsContent value="bookings" className="space-y-4">
-            <Card className="rounded-3xl"><CardHeader><CardTitle>آخر الحجوزات</CardTitle></CardHeader><CardContent className="grid gap-4">
-              {bookings.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">لا توجد حجوزات بعد</p>
-              ) : (
-                bookings.map((booking) => (
-                  <div key={booking.id} className="p-4 rounded-2xl bg-card border space-y-2">
-                    <div className="flex justify-between"><div><p className="font-semibold">{booking.patient_name}</p><p className="text-sm text-muted-foreground">{booking.patient_phone}</p></div><Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>{booking.status === "confirmed" ? "مؤكد" : "معلق"}</Badge></div>
-                    <div className="text-sm"><p>كود: <span className="font-mono font-bold">{booking.id}</span></p><p>الطبيب: {booking.doctor_name}</p><p>السعر: {booking.price} جنيه</p></div>
-                    <Button onClick={() => printBookingReceipt(booking)} variant="outline" size="sm" className="w-full gap-2"><Printer className="w-4 h-4" />طباعة الوصل</Button>
-                  </div>
-                ))
-              )}
-            </CardContent></Card>
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle>آخر الحجوزات</CardTitle>
+              </CardHeader>
+
+              <CardContent className="grid gap-4">
+                {bookings.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">لا توجد حجوزات بعد</p>
+                ) : (
+                  bookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="p-4 rounded-2xl bg-card border space-y-2"
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-semibold">{booking.patient_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.patient_phone}
+                          </p>
+                        </div>
+
+                        <Badge
+                          variant={
+                            booking.status === "confirmed" ? "default" : "secondary"
+                          }
+                        >
+                          {booking.status === "confirmed" ? "مؤكد" : "معلق"}
+                        </Badge>
+                      </div>
+
+                      <div className="text-sm">
+                        <p>
+                          كود:{" "}
+                          <span className="font-mono font-bold">{booking.id}</span>
+                        </p>
+                        <p>الطبيب: {booking.doctor_name}</p>
+                        <p>السعر: {booking.price} جنيه</p>
+                      </div>
+
+                      <Button
+                        onClick={() => printBookingReceipt(booking)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                      >
+                        <Printer className="w-4 h-4" /> طباعة الوصل
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
+          {/* ------------------ إضافة حجز ------------------ */}
           <TabsContent value="add-booking" className="space-y-4">
             <Card className="rounded-3xl">
-              <CardHeader><CardTitle>إضافة حجز جديد</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>إضافة حجز جديد</CardTitle>
+              </CardHeader>
+
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
-                  <Button onClick={() => setBookingType("online")} variant={bookingType === "online" ? "default" : "outline"} className="flex-1">حجز أونلاين</Button>
-                  <Button onClick={() => setBookingType("offline")} variant={bookingType === "offline" ? "default" : "outline"} className="flex-1">حجز أوفلاين</Button>
+                  <Button
+                    onClick={() => setBookingType("online")}
+                    variant={bookingType === "online" ? "default" : "outline"}
+                    className="flex-1"
+                  >
+                    حجز أونلاين
+                  </Button>
+
+                  <Button
+                    onClick={() => setBookingType("offline")}
+                    variant={bookingType === "offline" ? "default" : "outline"}
+                    className="flex-1"
+                  >
+                    حجز أوفلاين
+                  </Button>
                 </div>
 
                 {bookingType === "online" ? (
                   <div className="space-y-4">
-                    <div><Label>معرف الحجز</Label><Input value={onlineBookingId} onChange={(e) => setOnlineBookingId(e.target.value)} placeholder="أدخل معرف الحجز" /></div>
-                    <Button onClick={handleOnlineBooking} className="w-full">تأكيد الحجز</Button>
+                    <div>
+                      <Label>معرف الحجز</Label>
+                      <Input
+                        value={onlineBookingId}
+                        onChange={(e) => setOnlineBookingId(e.target.value)}
+                        placeholder="أدخل معرف الحجز"
+                      />
+                    </div>
+
+                    <Button onClick={handleOnlineBooking} className="w-full">
+                      تأكيد الحجز
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div><Label>اسم المريض</Label><Input value={offlinePatientName} onChange={(e) => setOfflinePatientName(e.target.value)} required /></div>
-                    <div><Label>رقم الهاتف</Label><Input value={offlinePatientPhone} onChange={(e) => setOfflinePatientPhone(e.target.value)} required /></div>
-                    <div><Label>المنطقة</Label><Input value={offlinePatientArea} onChange={(e) => setOfflinePatientArea(e.target.value)} /></div>
-                    <div><Label>الطبيب</Label><Select value={offlineDoctor} onValueChange={setOfflineDoctor}><SelectTrigger><SelectValue placeholder="اختر الطبيب" /></SelectTrigger><SelectContent>{doctors.map((doc) => (<SelectItem key={doc.id} value={doc.id}>{doc.doctor_name} - {doc.specialization}</SelectItem>))}</SelectContent></Select></div>
-                    <div><Label>السعر</Label><Input type="number" value={offlinePrice} onChange={(e) => setOfflinePrice(e.target.value)} required /></div>
-                    <Button onClick={handleOfflineBooking} className="w-full">إضافة الحجز</Button>
+                    <div>
+                      <Label>اسم المريض</Label>
+                      <Input
+                        value={offlinePatientName}
+                        onChange={(e) => setOfflinePatientName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label>رقم الهاتف</Label>
+                      <Input
+                        value={offlinePatientPhone}
+                        onChange={(e) => setOfflinePatientPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label>المنطقة</Label>
+                      <Input
+                        value={offlinePatientArea}
+                        onChange={(e) => setOfflinePatientArea(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>الطبيب</Label>
+                      <Select
+                        value={offlineDoctor}
+                        onValueChange={setOfflineDoctor}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الطبيب" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {doctors.map((doc) => (
+                            <SelectItem key={doc.id} value={doc.id}>
+                              {doc.doctor_name} - {doc.specialization}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>السعر</Label>
+                      <Input
+                        type="number"
+                        value={offlinePrice}
+                        onChange={(e) => setOfflinePrice(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <Button onClick={handleOfflineBooking} className="w-full">
+                      إضافة الحجز
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* ------------------ الأطباء ------------------ */}
           <TabsContent value="doctors" className="space-y-4">
-            <Card className="rounded-3xl"><CardHeader><CardTitle>إضافة طبيب جديد</CardTitle></CardHeader><CardContent><form onSubmit={addDoctor} className="space-y-4">
-              <div><Label>اسم الطبيب</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} required /></div>
-              <div><Label>البريد الإلكتروني</Label><Input type="email" value={doctorEmail} onChange={(e) => setDoctorEmail(e.target.value)} required /></div>
-              <div><Label>كلمة المرور</Label><Input type="password" value={doctorPassword} onChange={(e) => setDoctorPassword(e.target.value)} required /></div>
-              <div><Label>التخصص</Label><Input value={specialization} onChange={(e) => setSpecialization(e.target.value)} required /></div>
-              <div><Label>سعر الكشف</Label><Input type="number" value={consultationPrice} onChange={(e) => setConsultationPrice(e.target.value)} required /></div>
-              <Button type="submit" className="w-full"><Plus className="w-4 h-4 ml-2" />إضافة الطبيب</Button>
-            </form></CardContent></Card>
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle>إضافة طبيب جديد</CardTitle>
+              </CardHeader>
 
-            <Card className="rounded-3xl"><CardHeader><CardTitle>قائمة الأطباء</CardTitle></CardHeader><CardContent className="space-y-3">
-              {doctors.map((doctor) => (
-                <div key={doctor.id} className="p-4 rounded-2xl bg-card border flex justify-between items-center">
-                  <div><p className="font-semibold">{doctor.doctor_name}</p><p className="text-sm text-muted-foreground">{doctor.specialization}</p></div>
-                  <Button onClick={() => toggleDoctorAvailability(doctor.id, doctor.is_available)} variant={doctor.is_available ? "default" : "outline"} size="sm">{doctor.is_available ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}</Button>
-                </div>
-              ))}
-            </CardContent></Card>
+              <CardContent>
+                <form onSubmit={addDoctor} className="space-y-4">
+                  <div>
+                    <Label>اسم الطبيب</Label>
+                    <Input
+                      value={doctorName}
+                      onChange={(e) => setDoctorName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>البريد الإلكتروني</Label>
+                    <Input
+                      type="email"
+                      value={doctorEmail}
+                      onChange={(e) => setDoctorEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>كلمة المرور</Label>
+                    <Input
+                      type="password"
+                      value={doctorPassword}
+                      onChange={(e) => setDoctorPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>التخصص</Label>
+                    <Input
+                      value={specialization}
+                      onChange={(e) => setSpecialization(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>سعر الكشف</Label>
+                    <Input
+                      type="number"
+                      value={consultationPrice}
+                      onChange={(e) => setConsultationPrice(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    <Plus className="w-4 h-4 ml-2" /> إضافة الطبيب
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle>قائمة الأطباء</CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-3">
+                {doctors.map((doctor) => (
+                  <div
+                    key={doctor.id}
+                    className="p-4 rounded-2xl bg-card border flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-semibold">{doctor.doctor_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {doctor.specialization}
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={() =>
+                        toggleDoctorAvailability(doctor.id, doctor.is_available)
+                      }
+                      variant={doctor.is_available ? "default" : "outline"}
+                      size="sm"
+                    >
+                      {doctor.is_available ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ------------------ ⭐ الحالة ⭐ ------------------ */}
+          <TabsContent value="status" className="space-y-4">
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle>حالة المستشفى</CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <Label>اختر الحالة الحالية</Label>
+
+                <Select
+                  value={status}
+                  onValueChange={async (value: HospitalStatus) => {
+                    try {
+                      setStatus(value);
+
+                      const { error } = await supabase
+                        .from("hospitals")
+                        .update({ status: value })
+                        .eq("id", hospital.id);
+
+                      if (error) throw error;
+
+                      toast.success("تم تحديث الحالة بنجاح");
+                      loadHospitalData();
+                    } catch (err) {
+                      toast.error("حدث خطأ أثناء تحديث الحالة");
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر حالة المستشفى" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="empty">فارغ</SelectItem>
+                    <SelectItem value="low_traffic">ازدحام منخفض</SelectItem>
+                    <SelectItem value="medium_traffic">ازدحام متوسط</SelectItem>
+                    <SelectItem value="high_traffic">ازدحام عالي</SelectItem>
+                    <SelectItem value="very_crowded">مزدحم جداً</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
